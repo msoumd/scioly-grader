@@ -181,12 +181,7 @@ def _corners(page_w: int, page_h: int, p: dict[str, Any], size: tuple[int, int])
         ty = m * H - c[k, 1] if c[k, 1] < H / 2 else H - m * H - c[k, 1]
         c += np.array([tx, ty])
         for _ in range(40):  # shrink toward that corner until the whole page is in frame
-            if (
-                c[:, 0].min() >= 0
-                and c[:, 1].min() >= 0
-                and c[:, 0].max() <= W
-                and c[:, 1].max() <= H
-            ):  # noqa: E501
+            if (c >= 0).all() and (c[:, 0] <= W).all() and (c[:, 1] <= H).all():
                 break
             c = c[k] + (c - c[k]) * 0.97
     return c
