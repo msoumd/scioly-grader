@@ -8,7 +8,7 @@ from hypothesis import strategies as st
 
 from app.db.models import ScoringMode
 from app.schemas.event_setup import LETTERS, QuestionSetup
-from app.services.scoring import round_points, score_question, score_sheet
+from app.services.scoring import fmt_points, round_points, score_question, score_sheet
 
 D = Decimal
 
@@ -133,6 +133,13 @@ def test_partial_thirds_kept_exact_per_question() -> None:
 )
 def test_round_points_half_up(value: str, expected: str) -> None:
     assert round_points(D(value)) == D(expected)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [("60", "60"), ("200.00", "200"), ("0.50", "0.5"), ("1.3333", "1.33")]
+)
+def test_fmt_points(value: str, expected: str) -> None:
+    assert fmt_points(D(value)) == expected
 
 
 def test_score_sheet_total_and_unanswered() -> None:

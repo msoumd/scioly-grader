@@ -49,6 +49,11 @@ def round_points(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def fmt_points(value: Decimal) -> str:
+    """Points for people: 60 -> '60', 0.50 -> '0.5', 1.333... -> '1.33'."""
+    return format(round_points(value).normalize(), "f")
+
+
 @dataclass(frozen=True)
 class SheetScore:
     per_question: dict[int, Decimal] = field(default_factory=dict)

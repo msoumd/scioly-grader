@@ -21,6 +21,7 @@ from pydantic_core import ErrorDetails
 
 from app.db.models import ScoringMode
 from app.schemas.event_setup import EventInfo, EventSetup, QuestionSetup
+from app.services.scoring import fmt_points as _fmt
 
 EVENT_TAB = "Event"
 QUESTIONS_TAB = "Questions"
@@ -113,11 +114,6 @@ class ImportReport:
                 lines.append(f"{title}:")
                 lines += [f"  - {item}" for item in items]
         return "\n".join(lines)
-
-
-def _fmt(value: Decimal) -> str:
-    """200 -> '200', 0.50 -> '0.5'."""
-    return format(value.normalize(), "f")
 
 
 # --- cell helpers -----------------------------------------------------------
