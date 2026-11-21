@@ -3,6 +3,7 @@
 **Starter-prompt step:** 1 (spreadsheet import and validation, scoring function with unit tests)
 **Branch:** `phase-01-import-scoring`
 **Depends on:** phase 0 merged
+**Status:** built on branch `phase-01-import-scoring`, awaiting review.
 
 ## Goal
 
@@ -64,10 +65,10 @@ Everything downstream (sheet generator, detection, results) reads the imported e
 
 ## By the end of this phase
 
-- [ ] `import-event` on the A&P file prints a clean report: 54 questions, 60 MCQ points, total check passes (or a clear message if the 200/210 question is unresolved)
-- [ ] Every broken fixture file gives a specific, row-numbered message, and all problems are listed at once
-- [ ] Events, questions and teams can be saved and re-imported following the rules above
-- [ ] Scoring function covers `exact` and `partial` with table tests and property tests
+- [x] `import-event` on the A&P file prints a clean report: 54 questions, 60 MCQ points, total check passes (or a clear message if the 200/210 question is unresolved)
+- [x] Every broken fixture file gives a specific, row-numbered message, and all problems are listed at once
+- [x] Events, questions and teams can be saved and re-imported following the rules above
+- [x] Scoring function covers `exact` and `partial` with table tests and property tests
 - [ ] CI green on SQLite and Postgres
 - [ ] Summary posted for Yuvan with the A&P import report pasted in
 

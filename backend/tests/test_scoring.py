@@ -109,6 +109,18 @@ CASES: list[tuple[str, QuestionSetup, set[str], str]] = [
 ]
 
 
+# The worked example in docs/DECISIONS.md: key A,C worth 2, penalty 0.25.
+DOC_EXAMPLE = q("A,C", points="2", scoring="partial", penalty="0.25")
+
+
+@pytest.mark.parametrize(
+    ("marked", "expected"),
+    [({"A"}, "1"), ({"A", "B"}, "0.75"), ({"A", "B", "C"}, "1.75"), ({"B", "D"}, "0")],
+)
+def test_decisions_doc_worked_example(marked: set[str], expected: str) -> None:
+    assert score_question(marked, DOC_EXAMPLE) == D(expected)
+
+
 @pytest.mark.parametrize(
     ("question", "marked", "expected"), [c[1:] for c in CASES], ids=[c[0] for c in CASES]
 )
