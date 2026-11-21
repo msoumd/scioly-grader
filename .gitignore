@@ -23,8 +23,8 @@ build/
 # Local data
 *.db
 *.sqlite3
-data/uploads/
-data/generated/
+**/data/uploads/
+**/data/generated/
 backend/test-output/
 
 # Node / frontend

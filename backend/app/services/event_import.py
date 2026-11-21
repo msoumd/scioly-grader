@@ -21,6 +21,7 @@ from pydantic_core import ErrorDetails
 
 from app.db.models import ScoringMode
 from app.schemas.event_setup import EventInfo, EventSetup, QuestionSetup
+from app.services.layout import INCH, SheetCapacityError, build_layout
 from app.services.scoring import fmt_points as _fmt
 
 EVENT_TAB = "Event"
@@ -52,6 +53,7 @@ class ImportReport:
     notes: list[str] = field(default_factory=list)  # free text from the sheet's notes rows
     tabs_ignored: list[str] = field(default_factory=list)
     rows_read: int = 0
+    sheet_note: str | None = None  # how the bubble page lays out
     setup: EventSetup | None = None
 
     @property
@@ -101,6 +103,8 @@ class ImportReport:
                 f"{_fmt(ev.free_response_max)} + {_fmt(self.mcq_points_total)} "
                 f"= {_fmt(ev.total_points)})",
             ]
+        if self.sheet_note:
+            lines.append(self.sheet_note)
         elif self.rows_read:
             lines.append(f"Question rows read: {self.rows_read}")
         if self.tabs_ignored:
@@ -369,4 +373,15 @@ def import_event_workbook(path: str | Path) -> ImportReport:
         report.setup = EventSetup(event=event, questions=questions)
     except ValidationError as exc:  # pragma: no cover - checks above mirror the schema
         report.errors += [describe_error(e) for e in exc.errors()]
+        return report
+
+    try:
+        layout = build_layout(report.setup)
+    except SheetCapacityError as exc:
+        report.errors.append(f"Sheet: {exc}")
+    else:
+        report.sheet_note = (
+            f"Sheet: fits on one page ({layout.columns} column"
+            f"{'s' if layout.columns != 1 else ''}, bubbles {layout.pitch / INCH:.2f} in apart)"
+        )
     return report

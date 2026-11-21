@@ -4,6 +4,8 @@
     uv run python -m app.cli import-event ../event_setups/PUSO_2026_AP_event_setup.xlsx --save
     uv run python -m app.cli import-teams teams.csv --save
     uv run python -m app.cli score-demo AP "1=D,2=C,9=C,D"
+    uv run python -m app.cli make-sheet AP                       # from the database
+    uv run python -m app.cli make-sheet --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx
 
 Without ``--save`` the import commands only check the file and print the report.
 Exit code: 0 OK, 1 problems found, 2 bad command line.
@@ -21,8 +23,15 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.services.event_import import import_event_workbook
-from app.services.event_store import EventLockedError, load_questions, save_event
+from app.services.event_store import (
+    EventLockedError,
+    load_event_setup,
+    load_questions,
+    save_event,
+)
+from app.services.layout import SheetCapacityError, build_layout
 from app.services.scoring import fmt_points, score_sheet
+from app.services.sheet_pdf import render_sheet_pdf, render_sheet_png
 from app.services.teams_import import import_teams_csv, save_teams
 
 SessionFactory = Callable[[], Session]
@@ -123,6 +132,44 @@ def _score_demo(args: argparse.Namespace, sessions: SessionFactory) -> int:
     return 0
 
 
+def _make_sheet(args: argparse.Namespace, sessions: SessionFactory) -> int:
+    if bool(args.event_id) == bool(args.from_xlsx):
+        print("Error: give either an event_id (from the database) or --from-xlsx PATH")
+        return 2
+    if args.from_xlsx:
+        report = import_event_workbook(args.from_xlsx)
+        if not report.ok:
+            print(report.to_text())
+            return 1
+        assert report.setup is not None
+        setup = report.setup
+    else:
+        with sessions() as session:
+            try:
+                setup = load_event_setup(session, args.event_id)
+            except LookupError as exc:
+                print(f"Error: {exc}")
+                return 1
+    try:
+        layout = build_layout(setup)
+    except SheetCapacityError as exc:
+        print(f"Error: {exc}")
+        return 1
+
+    default = Path("data/generated") / f"{layout.event_id}_v{layout.sheet_version}.pdf"
+    out = Path(args.out) if args.out else default
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(render_sheet_pdf(layout))
+    cols = f"{layout.columns} column{'s' if layout.columns != 1 else ''}"
+    print(f"Wrote {out} ({len(layout.questions)} questions, {cols})")
+    if args.png:
+        png = out.with_suffix(".png")
+        png.write_bytes(render_sheet_png(layout))
+        print(f"Wrote {png}")
+    print("Print at 100% / actual size (not 'fit to page').")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -141,6 +188,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("event_id")
     p.add_argument("marks")
     p.set_defaults(func=_score_demo)
+
+    p = sub.add_parser("make-sheet", help="write the printable bubble sheet PDF for an event")
+    p.add_argument("event_id", nargs="?", help="a saved event (omit when using --from-xlsx)")
+    p.add_argument("--from-xlsx", metavar="PATH", help="build from a setup file, no database")
+    p.add_argument("--out", metavar="PATH", help="default: data/generated/<event>_v<version>.pdf")
+    p.add_argument("--png", action="store_true", help="also write a 200 dpi PNG preview")
+    p.set_defaults(func=_make_sheet)
     return parser
 
 

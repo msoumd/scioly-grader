@@ -132,3 +132,13 @@ def test_ap_roundtrip_and_score(db: Session) -> None:
 def test_load_unknown_event(db: Session) -> None:
     with pytest.raises(LookupError, match="No event with event_id 'NOPE'"):
         load_questions(db, "NOPE")
+
+
+def test_load_event_setup_roundtrip(db: Session) -> None:
+    from app.services.event_store import load_event_setup
+
+    report = import_event_workbook(AP_FILE)
+    assert report.setup is not None
+    save_event(db, report.setup, AP_FILE.name)
+    db.expire_all()
+    assert load_event_setup(db, "AP") == report.setup
