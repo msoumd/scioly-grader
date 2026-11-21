@@ -2,6 +2,38 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Fake-sheet test harness (phase 3)
+
+**Why fakes first.** The reader (phase 4) is judged against thousands of fake photos whose answers are known exactly. That lets us measure accuracy per condition before any real tournament, and catch regressions in CI.
+
+**What a fake sheet is.** The real printed page (phase 2), with pencil marks painted at the exact bubble positions, then "photographed" under one of 20 conditions:
+- clean;
+- rotation: small, large, 90°, 180°;
+- distance and framing: perspective tilt up to ~25°, far, near, one corner at the frame edge;
+- blur: focus and motion;
+- lighting: shadow band, glare, uneven light, low light with noise;
+- image quality: heavy JPEG, warm colour cast;
+- paper and surroundings: curl, desk clutter;
+- a stacked "phone" mix of mild problems.
+
+Photos are 1500×2000, a downscaled phone photo. Every sheet comes only from (seed, index), so datasets rebuild byte-for-byte.
+
+**What counts as the right answer.** The truth is what the student *meant*:
+- solid, light, partial, tick and cross marks all count as chosen;
+- an erased smudge counts as blank;
+- stray marks outside bubbles count for nothing;
+- a team-number column left empty or with two digits has no correct number: the right behaviour is to flag it for a human, not guess.
+
+**The key metric is the silent error rate:** questions read wrong *and* not flagged for review. A flagged mistake is fixed on the review screen; a silent one changes a team's score unnoticed. The report also gives:
+- bubble, question and team accuracy;
+- flag rate;
+- QR read rate;
+- score error;
+
+all per condition and per fill style.
+
+**Real photos.** These use the same label format under `backend/data/real_samples/`. Only staff-filled samples (`staff/`) can be committed; anything else there is git-ignored, so student sheets never reach the public repo.
+
 ## 2026-11-21 — Answer-sheet layout and libraries (phase 2)
 
 **One layout, two users.** `app/services/layout.py` computes every position on the page (markers, QR, team grid, each bubble) from the event setup. The PDF renderer only draws that, and the reader (phase 4) will only read that, so the printed page and the reader cannot disagree. Positions are in PDF points from the top-left corner, rounded to 0.01 pt, and golden files catch any accidental change. `LAYOUT_VERSION` must go up whenever positions change.

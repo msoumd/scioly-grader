@@ -65,7 +65,7 @@ jobs:
           for f in ../event_setups/*.xlsx; do
             name="$(basename "${f%.xlsx}")"
             ds="test-output/harness/${name}"
-            uv run python -m app.harness build --from-xlsx "$f" --n 19 --out "$ds"
+            uv run python -m app.harness build --from-xlsx "$f" --n 20 --out "$ds"
             uv run python -m app.harness evaluate --dataset "$ds" --reader oracle --require-perfect
             uv run python -m app.harness contact-sheet --dataset "$ds"
           done

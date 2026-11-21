@@ -17,6 +17,7 @@ backend/
     schemas/      Pydantic shapes, e.g. the event-setup import
     services/     scoring, event/teams import (phase 1), sheet layout + PDF (phase 2),
                   detection (phases 3-4)
+    harness/      fake filled sheets, phone-photo simulation, reader evaluation (phase 3)
     cli.py        command-line import, scoring and sheet tools
   migrations/     Alembic migrations — the only way the schema changes
   tests/
@@ -57,7 +58,19 @@ uv run python -m app.cli make-sheet --from-xlsx ../event_setups/PUSO_2026_AP_eve
 
 PDFs go to `backend/data/generated/` (git-ignored). CI also attaches every example event's sheet to each pull request as an `answer-sheets` artifact.
 
-The import report lists every problem with its tab and row number. Rules for re-importing and scoring are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+The import report lists every problem with its tab and row number.
+
+## Fake-sheet test harness
+
+Builds fake phone photos of filled-in sheets with known answers, and measures a reader against them:
+
+```bash
+uv run python -m app.harness build --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx --n 200   # -> data/harness/AP
+uv run python -m app.harness contact-sheet --dataset data/harness/AP
+uv run python -m app.harness evaluate --dataset data/harness/AP --reader oracle
+```
+
+To add real phone photos as test data, see [`backend/data/real_samples/README.md`](backend/data/real_samples/README.md). CI attaches contact sheets and reports to every PR as `harness-samples`. Rules for re-importing and scoring are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Checks
 

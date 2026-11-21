@@ -3,6 +3,7 @@
 **Starter-prompt step:** 2, second half (fake-sheet test harness)
 **Branch:** `phase-03-fake-sheets`
 **Depends on:** phase 2 merged (layout + render-to-image)
+**Status:** built on branch `phase-03-fake-sheets`, awaiting review.
 
 ## Goal
 
@@ -25,6 +26,7 @@ A script that turns any event setup into many fake filled-in sheets with **known
    - Team-number digits bubbled the same way, plus cases with a missing digit or two digits bubbled in one column.
    - Pencil texture: noisy grey strokes, not perfect black discs.
 4. **Augmentations** — `app/harness/augment.py`, each with strength levels and a fixed seed:
+   - glare from overhead lights (added after review of the plan),
    - rotation (±5°, ±15°, 90°, 180°), perspective tilt (up to ~25°), scale (phone 1–3 ft away), blur (focus, motion), uneven lighting and shadows (a hand/phone shadow band), low light + noise, JPEG compression, colour cast (warm indoor light), paper curl (mild warp), crop with one corner near the edge, background clutter (desk texture around the page).
    - Combined "realistic phone" preset that stacks a random mild subset.
 5. **Dataset builder CLI** — `uv run python -m app.harness build --event AP --n 200 --conditions all --out data/harness/AP/` writes `NNNN.jpg` + `NNNN.json` and a `manifest.json` (conditions, seeds, counts). Fully reproducible from seeds.
@@ -34,7 +36,7 @@ A script that turns any event setup into many fake filled-in sheets with **known
    - flag rate: share of questions sent to human review,
    - score error: |detected score − true score| distribution.
    A trivial "perfect oracle" reader (returns the truth) must score 100%, and a "always blank" reader must score as expected; both are tests.
-7. **Real samples folder** — `data/real_samples/` (git-ignored for photos with student info; commit only blank or staff-filled samples) with a README on how to add hand-filled phone photos and label them, so the evaluator runs on real photos too.
+7. **Real samples folder** — `backend/data/real_samples/` (git-ignored for photos with student info; commit only blank or staff-filled samples) with a README on how to add hand-filled phone photos and label them, so the evaluator runs on real photos too.
 
 ## Tests
 
@@ -50,11 +52,11 @@ A script that turns any event setup into many fake filled-in sheets with **known
 
 ## By the end of this phase
 
-- [ ] One command builds a reproducible labelled dataset for any event, across all listed conditions
-- [ ] Sample images look like real phone photos of a filled sheet (attach a contact sheet image to the summary)
-- [ ] Evaluator produces the per-condition report and is proven correct with oracle and broken readers
-- [ ] Instructions exist for adding real phone photos as extra test data
-- [ ] CI green
+- [x] One command builds a reproducible labelled dataset for any event, across all listed conditions
+- [x] Sample images look like real phone photos of a filled sheet (attach a contact sheet image to the summary)
+- [x] Evaluator produces the per-condition report and is proven correct with oracle and broken readers
+- [x] Instructions exist for adding real phone photos as extra test data
+- [x] CI green
 
 ## Review checkpoint for Yuvan
 
