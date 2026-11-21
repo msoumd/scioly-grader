@@ -39,6 +39,7 @@ class SheetTruth(BaseModel):
     layout_version: int
     condition: str = "clean"  # photo condition, or "real" for hand-labelled photos
     seed: int | None = None
+    profile: str | None = None  # fake team type: "perfect" | "random" | "typical"
 
     # What the student meant: question -> letters chosen (empty list = left blank).
     marks: dict[int, list[str]]
