@@ -306,20 +306,22 @@ def _decide_question(
     q: int,
     letters: list[str],
     rel: list[float],
-    single_answer: bool,
-    config: DetectionConfig,
+    lo: float,
     hi: float,
+    erasure_ratio: float,
 ) -> QuestionRead:
-    lo = config.blank_threshold
     marked = [letter for letter, v in zip(letters, rel, strict=True) if v >= hi]
     unsure = [letter for letter, v in zip(letters, rel, strict=True) if lo <= v < hi]
     flags = []
     if unsure:
         flags.append("ambiguous")
-    if single_answer and len(marked) >= 2:
+    if len(marked) >= 2:
         strengths = sorted((v for v in rel if v >= hi), reverse=True)
-        if strengths[0] >= config.erasure_ratio * strengths[-1]:
-            flags.append("multiple_marks")  # one much darker: the other may be an erasure
+        if strengths[0] >= erasure_ratio * strengths[-1]:
+            # One mark much fainter than another: possibly an erasure, a human decides.
+            # (Equally dark double marks are read as given; on a one-answer question they
+            # score 0 under 'exact', which is the rule.)
+            flags.append("multiple_marks")
     if not marked and not unsure:
         flags.append("blank")
     confidence = min(_confidence(v, lo, hi) for v in rel)
@@ -332,8 +334,7 @@ def _decide_question(
     )
 
 
-def _decide_digit(column: int, rel: list[float], config: DetectionConfig, hi: float) -> DigitRead:
-    lo = config.team_blank_threshold
+def _decide_digit(column: int, rel: list[float], lo: float, hi: float) -> DigitRead:
     marked = [d for d, v in enumerate(rel) if v >= hi]
     unsure = [d for d, v in enumerate(rel) if lo <= v < hi]
     flags = []
@@ -411,7 +412,9 @@ def read_sheet(
     blurry = scan.sharpness < config.blurry_sharpness
     if blurry:
         scan.page_flags.append("image_blurry")
+    q_lo = config.blurry_blank_threshold if blurry else config.blank_threshold
     q_hi = config.blurry_mark_threshold if blurry else config.mark_threshold
+    t_lo = config.blurry_blank_threshold if blurry else config.team_blank_threshold
     t_hi = config.blurry_mark_threshold if blurry else config.team_mark_threshold
 
     # Blank level per printed letter: most bubbles of each letter are empty.
@@ -461,10 +464,14 @@ def read_sheet(
             [max(f / level, max(0.0, float(c) - base)) for f, c in zip(fills, cov, strict=True)]
         )
 
-    correct = {q.q: len(q.correct) for q in setup.questions}
     for row, rel, m in zip(layout.questions, q_score, q_measured, strict=True):
         decided = _decide_question(
-            row.q, [b.label for b in row.bubbles], rel, correct[row.q] == 1, config, q_hi
+            row.q,
+            [b.label for b in row.bubbles],
+            rel,
+            q_lo,
+            q_hi,
+            config.erasure_ratio,
         )
         if m.edge_hit:
             decided = replace(decided, flags=[*decided.flags, "alignment_uncertain"])
@@ -472,7 +479,7 @@ def read_sheet(
 
     if any(m.edge_hit for m in t_measured):
         scan.team_flags.append("team_alignment_uncertain")
-    scan.digits = [_decide_digit(i, col, config, t_hi) for i, col in enumerate(team_score)]
+    scan.digits = [_decide_digit(i, col, t_lo, t_hi) for i, col in enumerate(team_score)]
     for d in scan.digits:
         scan.team_flags += [f for f in d.flags if f not in scan.team_flags]
     if all(d.digit is not None for d in scan.digits):

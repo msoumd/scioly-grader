@@ -20,20 +20,21 @@ class DetectionConfig:
     # --- bubble measurement
     align_search_frac: float = 0.35  # row re-centring search, as a fraction of bubble spacing
     first_row_search_frac: float = 0.45  # wider for the top row of each column (< 0.5)
-    inner_ratio: float = 0.72  # measure fill inside this fraction of the bubble radius
+    inner_ratio: float = 0.80  # measure fill inside this fraction of the bubble radius
     background_kernel_frac: float = 0.025  # illumination estimate window, fraction of width
 
     # --- decisions, on fill relative to the page's own solid-mark level (0..1+)
     mark_threshold: float = 0.22  # at or above: marked
     blank_threshold: float = 0.15  # below: blank; in between: ambiguous -> human review
     min_mark_level: float = 0.25  # floor for the page's solid-mark level (absolute fill)
-    erasure_ratio: float = 2.5  # two marks, one this many times darker: possible erasure
+    erasure_ratio: float = 2.5  # two+ marks, one this many times darker: possible erasure
     coverage_cut: float = 0.5  # 'real pencil' = darker than this share of the solid level
     coverage_smooth_px: float = 1.2  # blur before measuring coverage, so noise is not pencil
 
     # --- blurry photos: read conservatively (wider "ask a human" band)
     blurry_sharpness: float = 0.45  # median printed-ring edge strength below this = blurry
     blurry_mark_threshold: float = 0.60
+    blurry_blank_threshold: float = 0.06
 
     # --- team number
     team_mark_threshold: float = 0.22
