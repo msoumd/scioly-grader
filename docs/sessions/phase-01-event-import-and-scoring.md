@@ -3,6 +3,7 @@
 **Starter-prompt step:** 1 (spreadsheet import and validation, scoring function with unit tests)
 **Branch:** `phase-01-import-scoring`
 **Depends on:** phase 0 merged
+**Status:** built on branch `phase-01-import-scoring` (PR #4), awaiting review.
 
 ## Goal
 
@@ -47,7 +48,7 @@ Everything downstream (sheet generator, detection, results) reads the imported e
    - `score_sheet(marks: dict[int, set[str]], setup) -> SheetScore` with per-question points and total. Unanswered question = empty set.
    - Use `Decimal` throughout and round the total to 2 decimals (half-up), so totals match a hand calculation.
 6. **CLI** — `uv run python -m app.cli import-event path.xlsx [--save]` prints the report; `import-teams path.csv`; `score-demo event_id "1=A,2=B,C"` for quick manual checks.
-7. **A&P verification** — import `event_setups/PUSO_2026_AP_event_setup.xlsx`. Expect 54 questions, 60 MCQ points. With `total_points=200` it needs `free_response_max=140`; check the sheet and report what it holds.
+7. **Example verification** — every workbook in `event_setups/` imports cleanly: A&P (54 contiguous questions, multi-select, 60 MCQ points) and a Forensics-shaped event (11 bubble questions with gaps in numbering, 3–5 options, half points, mostly free response). These are examples; nothing is tuned to them.
 8. Record in `docs/DECISIONS.md`: re-import rules, rounding rule, how partial credit treats over-marking.
 
 ## Tests (must all exist and pass)
@@ -64,18 +65,17 @@ Everything downstream (sheet generator, detection, results) reads the imported e
 
 ## By the end of this phase
 
-- [ ] `import-event` on the A&P file prints a clean report: 54 questions, 60 MCQ points, total check passes (or a clear message if the 200/210 question is unresolved)
-- [ ] Every broken fixture file gives a specific, row-numbered message, and all problems are listed at once
-- [ ] Events, questions and teams can be saved and re-imported following the rules above
-- [ ] Scoring function covers `exact` and `partial` with table tests and property tests
-- [ ] CI green on SQLite and Postgres
-- [ ] Summary posted for Yuvan with the A&P import report pasted in
+- [x] `import-event` on the A&P file prints a clean report: 54 questions, 60 MCQ points, total check passes (or a clear message if the 200/210 question is unresolved)
+- [x] Every broken fixture file gives a specific, row-numbered message, and all problems are listed at once
+- [x] Events, questions and teams can be saved and re-imported following the rules above
+- [x] Scoring function covers `exact` and `partial` with table tests and property tests
+- [x] CI green on SQLite and Postgres
+- [x] Summary posted for Yuvan with the example import reports
 
 ## Review checkpoint for Yuvan
 
-- Read the A&P import report and spot-check 5–10 answers against the key.
-- Confirm the partial-credit formula on two worked examples included in the summary.
-- Answer: 200 vs 210 total; what rows 55–66 are.
+- Read the example import reports and spot-check a few answers against the source sheets.
+- Confirm the partial-credit formula on the worked example in `docs/DECISIONS.md`.
 
 ## Risks
 

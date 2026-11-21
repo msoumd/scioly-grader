@@ -5,7 +5,7 @@ Scores Science Olympiad multiple-choice bubble sheets from phone photos and comb
 - Spec and build order: [`docs/STARTER_PROMPT.md`](docs/STARTER_PROMPT.md)
 - Why things are the way they are: [`docs/DECISIONS.md`](docs/DECISIONS.md)
 - Build phases (one plan per session): [`docs/sessions/`](docs/sessions/README.md)
-- Event setup spreadsheets: [`event_setups/`](event_setups/)
+- Example event setup spreadsheets: [`event_setups/`](event_setups/README.md)
 
 ## Layout
 
@@ -15,10 +15,11 @@ backend/
     api/          FastAPI routes
     db/           SQLAlchemy models + session (SQLite dev, Supabase Postgres prod)
     schemas/      Pydantic shapes, e.g. the event-setup import
-    services/     scoring, import, detection (build steps 1-3)
+    services/     scoring, event/teams import (phase 1), detection (phases 3-4)
+    cli.py        command-line import and scoring tools
   migrations/     Alembic migrations — the only way the schema changes
   tests/
-event_setups/     supervisor spreadsheets (A&P is the first real event)
+event_setups/     example supervisor spreadsheets (the app works for any event)
 docs/
 ```
 
@@ -35,6 +36,18 @@ uv run uvicorn app.main:app --reload
 ```
 
 Then open http://localhost:8000/health.
+
+## Import an event and try scoring
+
+```bash
+cd backend
+uv run python -m app.cli import-event ../event_setups/PUSO_2026_AP_event_setup.xlsx          # check only
+uv run python -m app.cli import-event ../event_setups/PUSO_2026_AP_event_setup.xlsx --save   # save to the database
+uv run python -m app.cli import-teams path/to/teams.csv --save                               # team_number,team_name
+uv run python -m app.cli score-demo AP "1=D,2=A,9=C,D"                                       # score some marks
+```
+
+The import report lists every problem with its tab and row number. Rules for re-importing and scoring are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Checks
 

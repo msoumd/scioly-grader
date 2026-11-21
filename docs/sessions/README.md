@@ -5,7 +5,7 @@ The project is built in sequential phases. Each phase is one working session tha
 | # | Phase | Starter-prompt step | Ends with |
 |---|-------|---------------------|-----------|
 | 0 | [Project scaffold](phase-00-project-scaffold.md) | — | Repo, schema, CI (**done, merged**) |
-| 1 | [Event import and scoring](phase-01-event-import-and-scoring.md) | 1 | A&P spreadsheet imports; scoring function fully tested |
+| 1 | [Event import and scoring](phase-01-event-import-and-scoring.md) | 1 | Any event's setup spreadsheet imports; scoring function fully tested |
 | 2 | [Sheet layout and PDF generator](phase-02-sheet-layout-and-pdf.md) | 2a | Printable bubble page for any event |
 | 3 | [Fake-sheet test harness](phase-03-fake-sheet-harness.md) | 2b | Thousands of realistic fake filled sheets with known answers |
 | 4 | [Detection and accuracy report](phase-04-detection-and-accuracy.md) | 3 | Measured accuracy per condition — **Yuvan must approve before any UI** |
@@ -30,11 +30,12 @@ These apply to all phases and are not repeated in each file.
 8. **End of phase:** push the branch, open a PR when Yuvan asks, write a short summary of what was built, what was checked, and any open questions. Stop and wait for review.
 9. **Plain-language summaries.** Yuvan is not a coder: explain decisions briefly and in plain words.
 
+## Examples, not targets
+
+The app works for any event. The spreadsheets in `event_setups/` (A&P, and a Forensics-shaped one) are examples used for testing. Where a phase plan says "A&P", read it as "an example event". No phase should hard-code or tune for one event's numbers.
+
 ## Open questions carried forward
 
 | Question | Blocks | Owner |
 |----------|--------|-------|
-| A&P total: 200 (student sheet) or 210 (key)? | Phase 1 sign-off on A&P | Yuvan |
-| What are scantron rows 55–66 on the A&P key? | Phase 1 sign-off on A&P | Yuvan |
-| Fill in the Forensics template as a second test event? | Phase 1 (nice to have), phase 4 | Yuvan |
 | Hosting cost approval (Render + Supabase paid tier, if needed) | Phase 9 | Yuvan |
