@@ -69,6 +69,24 @@ jobs:
             uv run python -m app.harness evaluate --dataset "$ds" --reader oracle --require-perfect
             uv run python -m app.harness contact-sheet --dataset "$ds"
           done
+      - name: Detection regression gate (fixed 60-sheet set vs approved baseline)
+        run: |
+          set -e
+          for spec in "PUSO_2026_AP_event_setup:40" "EXAMPLE_forensics_event_setup:20"; do
+            name="${spec%%:*}"; n="${spec##*:}"
+            ds="test-output/detection/${name}"
+            uv run python -m app.harness build --from-xlsx "../event_setups/${name}.xlsx" \
+              --n "$n" --seed 7 --out "$ds"
+            uv run python -m app.harness evaluate --dataset "$ds" --reader detector \
+              --baseline "tests/regression/detector_${name}.json"
+          done
+      - name: Upload detection reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detection-reports
+          path: backend/test-output/detection/*/report/
+          if-no-files-found: ignore
       - name: Upload harness samples
         uses: actions/upload-artifact@v4
         with:

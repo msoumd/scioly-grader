@@ -30,7 +30,7 @@ def dataset(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, EventSetup,
 
 def test_oracle_is_perfect(dataset: tuple[Path, EventSetup, list[Sample]]) -> None:
     path, _, _ = dataset
-    report = evaluate_dataset(path, oracle_reader, "oracle")
+    report = evaluate_dataset(path, READERS["oracle"], "oracle")
     m = report.overall.metrics()
     assert report.perfect
     assert m["bubble_accuracy"] == m["question_accuracy"] == m["team_accuracy"] == 1.0
@@ -124,7 +124,7 @@ def test_team_rules() -> None:
 
 def test_report_files(dataset: tuple[Path, EventSetup, list[Sample]], tmp_path: Path) -> None:
     path, _, _ = dataset
-    report = evaluate_dataset(path, blank_reader, "blank")
+    report = evaluate_dataset(path, READERS["blank"], "blank")
     report.write(tmp_path)
     data = json.loads((tmp_path / "report.json").read_text())
     assert data["reader"] == "blank"
@@ -143,9 +143,35 @@ def test_score_error_uses_scoring_rules(dataset: tuple[Path, EventSetup, list[Sa
 
 
 def test_registry() -> None:
-    assert set(READERS) == {"oracle", "blank"}
+    assert set(READERS) == {"oracle", "blank", "detector"}
 
 
 def test_missing_manifest(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="manifest.json"):
         load_dataset(tmp_path)
+
+
+def test_retake_is_never_silent(dataset: tuple[Path, EventSetup, list[Sample]]) -> None:
+    """A reader that asks for a retake has every question flagged, none silent."""
+    _, setup, samples = dataset
+    report = evaluate(setup, samples, lambda s: SheetRead(retake=True))
+    m = report.overall.metrics()
+    assert m["silent_errors"] == 0 and m["team_silent_errors"] == 0
+    assert m["retake_rate"] == 1.0 and m["flag_rate"] == 1.0
+    assert not report.perfect
+
+
+def test_regression_gate() -> None:
+    from app.harness.evaluate import regressions
+
+    def rep(silent: int, team: int, flag: float, sheets: int = 10) -> dict:  # type: ignore[type-arg]
+        return {"overall": {"silent_errors": silent, "team_silent_errors": team,
+                            "flag_rate": flag, "sheets": sheets}}  # fmt: skip
+
+    base = rep(1, 0, 0.02)
+    assert regressions(rep(1, 0, 0.02), base) == []
+    assert regressions(rep(0, 0, 0.03), base) == []  # better or within slack
+    assert "silent question errors: 2" in regressions(rep(2, 0, 0.02), base)[0]
+    assert "silent team-number errors: 1" in regressions(rep(1, 1, 0.02), base)[0]
+    assert "flag rate" in regressions(rep(0, 0, 0.10), base)[0]  # can't cheat by flagging
+    assert "dataset changed" in regressions(rep(1, 0, 0.02, sheets=11), base)[0]

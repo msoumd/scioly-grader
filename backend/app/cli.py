@@ -6,6 +6,8 @@
     uv run python -m app.cli score-demo AP "1=D,2=C,9=C,D"
     uv run python -m app.cli make-sheet AP                       # from the database
     uv run python -m app.cli make-sheet --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx
+    uv run python -m app.cli read-sheet photo.jpg                # event looked up in the database
+    uv run python -m app.cli read-sheet scans.pdf --from-xlsx ../event_setups/<event>.xlsx
 
 Without ``--save`` the import commands only check the file and print the report.
 Exit code: 0 OK, 1 problems found, 2 bad command line.
@@ -14,11 +16,13 @@ Exit code: 0 OK, 1 problems found, 2 bad command line.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+import cv2
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.orm import Session
 
@@ -170,6 +174,78 @@ def _make_sheet(args: argparse.Namespace, sessions: SessionFactory) -> int:
     return 0
 
 
+def _read_sheet(args: argparse.Namespace, sessions: SessionFactory) -> int:
+    from app.schemas.event_setup import EventSetup
+    from app.services.detection import load_images, read_sheet
+    from app.services.detection.loader import UnreadableImageError
+
+    path = Path(args.path)
+    try:
+        pages = load_images(path.read_bytes(), path.name)
+    except (OSError, UnreadableImageError) as exc:
+        print(f"Error: {exc}")
+        return 1
+
+    fallback: EventSetup | None = None
+    if args.from_xlsx:
+        report = import_event_workbook(args.from_xlsx)
+        if not report.ok or report.setup is None:
+            print(report.to_text())
+            return 1
+        fallback = report.setup
+
+    def lookup(code: str, version: int) -> EventSetup | None:
+        if fallback is not None:
+            ev = fallback.event
+            return fallback if (code, version) == (ev.event_id, ev.sheet_version) else None
+        with sessions() as session:
+            try:
+                setup = load_event_setup(session, code)
+            except LookupError:
+                return None
+        return setup if setup.event.sheet_version == version else None
+
+    results = []
+    worst = 0
+    for i, image in enumerate(pages, start=1):
+        scan = read_sheet(image, lookup, fallback=fallback)
+        if not scan.readable:
+            worst = 1
+        if args.json:
+            read = scan.to_read()
+            results.append(
+                {
+                    "page": i,
+                    "page_flags": scan.page_flags,
+                    "readable": scan.readable,
+                    **read.model_dump(mode="json"),
+                    "team_flags": scan.team_flags,
+                    "mcq_score": str(scan.mcq_score) if scan.mcq_score is not None else None,
+                    "questions": {
+                        str(q): {"marked": r.marked, "fills": r.fills,
+                                 "confidence": r.confidence, "flags": r.flags}
+                        for q, r in scan.questions.items()
+                    },
+                }
+            )  # fmt: skip
+        else:
+            if len(pages) > 1:
+                print(f"=== Page {i} of {len(pages)}")
+            print(scan.summary())
+            if not scan.readable:
+                print("Could not read this page: retake the photo (all four corner squares "
+                      "visible, flat, in focus).")  # fmt: skip
+        if args.warped_out and scan.warped is not None:
+            out = Path(args.warped_out)
+            if len(pages) > 1:
+                out = out.with_name(f"{out.stem}_p{i}{out.suffix}")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(out), scan.warped)
+    if args.json:
+        print(json.dumps(results if len(results) > 1 else results[0], indent=1))
+    return worst
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -195,6 +271,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", metavar="PATH", help="default: data/generated/<event>_v<version>.pdf")
     p.add_argument("--png", action="store_true", help="also write a 200 dpi PNG preview")
     p.set_defaults(func=_make_sheet)
+
+    p = sub.add_parser("read-sheet", help="read a photo, scan or multi-page PDF of sheets")
+    p.add_argument("path")
+    p.add_argument("--from-xlsx", metavar="PATH", help="use this setup file, not the database")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--warped-out", metavar="PNG", help="save the straightened page image")
+    p.set_defaults(func=_read_sheet)
     return parser
 
 

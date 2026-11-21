@@ -56,8 +56,14 @@ def load_dataset(path: Path) -> tuple[EventSetup, list[Sample]]:
     for truth_path in sorted(path.glob("*.json")):
         if truth_path.name in _SKIP_JSON or not _SAMPLE_ID.match(truth_path.stem):
             continue
-        image = next((truth_path.with_suffix(s) for s in IMAGE_SUFFIXES
-                      if truth_path.with_suffix(s).exists()), None)  # fmt: skip
+        image = next(
+            (
+                truth_path.with_suffix(s)
+                for s in IMAGE_SUFFIXES
+                if truth_path.with_suffix(s).exists()
+            ),
+            None,
+        )
         if image is None:
             raise FileNotFoundError(f"no image next to {truth_path.name}")
         samples.append(Sample(truth_path.stem, image, SheetTruth.load(truth_path)))
@@ -80,6 +86,7 @@ class Tally:
     team_correct: int = 0
     team_silent: int = 0
     event_read: int = 0
+    retakes: int = 0  # sheets the reader asked to photograph again
     score_errors: list[Decimal] = field(default_factory=list)
 
     @staticmethod
@@ -100,6 +107,7 @@ class Tally:
             "team_accuracy": self._rate(self.team_correct, self.team_total),
             "team_silent_errors": self.team_silent,
             "event_read_rate": self._rate(self.event_read, self.sheets),
+            "retake_rate": self._rate(self.retakes, self.sheets),
             "score_exact_rate": self._rate(sum(e == 0 for e in errs), len(errs)),
             "score_error_mean": float(sum(errs) / len(errs)) if errs else None,
             "score_error_p95": float(p95) if p95 is not None else None,
@@ -172,25 +180,35 @@ class EvalReport:
             "## By condition",
             "",
             "| Condition | Sheets | Silent error | Question acc. | Bubble acc. | Flagged | "
-            "Team acc. | QR read | Score exact | Score err. max |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+            "Retake | Team acc. | QR read | Score exact | Score err. max |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
         rows = [*d["by_condition"].items(), ("**All**", o)]
         for name, m in rows:
             lines.append(
                 f"| {name} | {m['sheets']} | {pct(m['silent_error_rate'])} | "
                 f"{pct(m['question_accuracy'])} | {pct(m['bubble_accuracy'])} | "
-                f"{pct(m['flag_rate'])} | {pct(m['team_accuracy'])} | "
+                f"{pct(m['flag_rate'])} | {pct(m['retake_rate'])} | {pct(m['team_accuracy'])} | "
                 f"{pct(m['event_read_rate'])} | {pct(m['score_exact_rate'])} | "
                 f"{num(m['score_error_max'])} |"
             )
-        lines += ["", "## Bubble accuracy by how it was filled", "",
-                  "| Fill style | Bubbles | Accuracy |", "|---|---:|---:|"]  # fmt: skip
+        lines += [
+            "",
+            "## Bubble accuracy by how it was filled",
+            "",
+            "| Fill style | Bubbles | Accuracy |",
+            "|---|---:|---:|",
+        ]
         for style, m in d["by_fill_style"].items():
             lines.append(f"| {style} | {m['bubbles']} | {pct(m['accuracy'])} |")
         if self.worst:
-            lines += ["", "## Sheets with silent errors (first 20)", "",
-                      "| Sample | Condition | Questions |", "|---|---|---|"]  # fmt: skip
+            lines += [
+                "",
+                "## Sheets with silent errors (first 20)",
+                "",
+                "| Sample | Condition | Questions |",
+                "|---|---|---|",
+            ]
             for w in self.worst[:20]:
                 lines.append(f"| {w['sample']} | {w['condition']} | {w['questions']} |")
         return "\n".join(lines) + "\n"
@@ -208,19 +226,28 @@ def _score(setup: EventSetup, marks: dict[int, set[str]]) -> Decimal:
     return score_sheet({q.q: marks.get(q.q, set()) for q in setup.questions}, setup).total
 
 
-def evaluate(setup: EventSetup, samples: list[Sample], reader: Reader, *,
-             reader_name: str = "reader", dataset_name: str = "") -> EvalReport:  # fmt: skip
+def evaluate(
+    setup: EventSetup,
+    samples: list[Sample],
+    reader: Reader,
+    *,
+    reader_name: str = "reader",
+    dataset_name: str = "",
+) -> EvalReport:
     report = EvalReport(reader=reader_name, dataset=dataset_name)
     for sample in samples:
         truth = sample.truth
         read = reader(sample)
         cond = report.by_condition.setdefault(truth.condition, Tally())
         tallies = (report.overall, cond)
-        flagged = set(read.flagged)
+        # A retake request sends the whole sheet back to the grader: everything is flagged.
+        flagged = {q.q for q in setup.questions} if read.retake else set(read.flagged)
+        team_flagged = read.team_flagged or read.retake
         silent_qs = []
 
         for t in tallies:
             t.sheets += 1
+            t.retakes += read.retake
             t.event_read += (read.event_code, read.sheet_version) == (
                 truth.event_code,
                 truth.sheet_version,
@@ -249,13 +276,13 @@ def evaluate(setup: EventSetup, samples: list[Sample], reader: Reader, *,
 
         true_team = truth.team_number
         if true_team is None:  # ambiguous by design: right answer is "don't guess"
-            team_ok = read.team_number is None or read.team_flagged
+            team_ok = read.team_number is None or team_flagged
         else:
             team_ok = read.team_number == true_team
         for t in tallies:
             t.team_total += 1
             t.team_correct += team_ok
-            t.team_silent += not team_ok and not read.team_flagged
+            t.team_silent += not team_ok and not team_flagged
 
         true_score = _score(setup, {q: set(v) for q, v in truth.marks.items()})
         read_score = _score(setup, {q: set(v) for q, v in read.marks.items()})
@@ -273,8 +300,36 @@ def evaluate(setup: EventSetup, samples: list[Sample], reader: Reader, *,
     return report
 
 
-def evaluate_dataset(path: Path, reader: Reader, reader_name: str) -> EvalReport:
+def evaluate_dataset(
+    path: Path, make_reader: Callable[[EventSetup], Reader], reader_name: str
+) -> EvalReport:
+    """Load a dataset, make a reader for its event, and evaluate it."""
     setup, samples = load_dataset(path)
     if not samples:
         raise ValueError(f"no labelled samples in {path}")
-    return evaluate(setup, samples, reader, reader_name=reader_name, dataset_name=str(path))
+    return evaluate(
+        setup, samples, make_reader(setup), reader_name=reader_name, dataset_name=str(path)
+    )
+
+
+FLAG_RATE_SLACK = 0.02  # a regression gate must not be passable by flagging everything
+
+
+def regressions(current: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
+    """What got worse versus an approved report (both ``EvalReport.to_dict()`` output)."""
+    cur, base = current["overall"], baseline["overall"]
+    problems = []
+    for key, label in (
+        ("silent_errors", "silent question errors"),
+        ("team_silent_errors", "silent team-number errors"),
+    ):
+        if cur[key] > base[key]:
+            problems.append(f"{label}: {cur[key]} (approved baseline {base[key]})")
+    if (cur["flag_rate"] or 0) > (base["flag_rate"] or 0) + FLAG_RATE_SLACK:
+        problems.append(
+            f"flag rate {cur['flag_rate']:.2%} is more than {FLAG_RATE_SLACK:.0%} above the "
+            f"approved {base['flag_rate']:.2%}"
+        )
+    if cur["sheets"] != base["sheets"]:
+        problems.append(f"dataset changed: {cur['sheets']} sheets vs {base['sheets']} in baseline")
+    return problems

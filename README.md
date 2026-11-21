@@ -17,6 +17,7 @@ backend/
     schemas/      Pydantic shapes, e.g. the event-setup import
     services/     scoring, event/teams import (phase 1), sheet layout + PDF (phase 2),
                   detection (phases 3-4)
+    services/detection/  reading photos: markers, QR, bubbles, flags (phase 4)
     harness/      fake filled sheets, phone-photo simulation, reader evaluation (phase 3)
     cli.py        command-line import, scoring and sheet tools
   migrations/     Alembic migrations — the only way the schema changes
@@ -60,6 +61,16 @@ PDFs go to `backend/data/generated/` (git-ignored). CI also attaches every examp
 
 The import report lists every problem with its tab and row number.
 
+## Read a sheet
+
+```bash
+uv run python -m app.cli read-sheet photo.jpg                       # event from the QR, looked up in the database
+uv run python -m app.cli read-sheet scans.pdf --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx
+uv run python -m app.cli read-sheet photo.heic --json --warped-out straightened.png
+```
+
+It prints the event, team number, each question's marks with a confidence, anything flagged for review, and the multiple-choice score. Photos (JPEG/PNG/iPhone HEIC) and multi-page PDFs work. If the page can't be found, it asks for a retake. How it decides, and the thresholds used, are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
 ## Fake-sheet test harness
 
 Builds fake phone photos of filled-in sheets with known answers, and measures a reader against them:
@@ -67,7 +78,7 @@ Builds fake phone photos of filled-in sheets with known answers, and measures a 
 ```bash
 uv run python -m app.harness build --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx --n 200   # -> data/harness/AP
 uv run python -m app.harness contact-sheet --dataset data/harness/AP
-uv run python -m app.harness evaluate --dataset data/harness/AP --reader oracle
+uv run python -m app.harness evaluate --dataset data/harness/AP --reader detector   # or oracle / blank
 ```
 
 To add real phone photos as test data, see [`backend/data/real_samples/README.md`](backend/data/real_samples/README.md). CI attaches contact sheets and reports to every PR as `harness-samples`. Rules for re-importing and scoring are in [`docs/DECISIONS.md`](docs/DECISIONS.md).

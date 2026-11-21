@@ -9,6 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class SheetRead(BaseModel):
     model_config = ConfigDict(frozen=True)
 
+    # The page could not be read at all (corners not found, ...): the grader is asked to
+    # retake the photo, so nothing on it can be silently wrong.
+    retake: bool = False
     event_code: str | None = None  # from the QR code; None if it could not be read
     sheet_version: int | None = None
     team_number: int | None = None  # None if the team grid could not be read

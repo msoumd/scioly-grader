@@ -19,7 +19,7 @@ from pathlib import Path
 
 from app.harness.augment import DEFAULT_SIZE
 from app.harness.dataset import MANIFEST, build_dataset, resolve_conditions, write_contact_sheet
-from app.harness.evaluate import evaluate_dataset
+from app.harness.evaluate import evaluate_dataset, regressions
 from app.harness.readers import READERS
 from app.harness.truth import SheetTruth
 from app.schemas.event_setup import EventSetup
@@ -66,8 +66,16 @@ def _build(args: argparse.Namespace) -> int:
             print(f"  {done}/{total}", flush=True)
 
     print(f"Building {args.n} fake sheets for {setup.event.event_id} in {out} ...")
-    manifest = build_dataset(setup, out, args.n, conditions, seed=args.seed, dpi=args.dpi,
-                             size=args.size, progress=progress)  # fmt: skip
+    manifest = build_dataset(
+        setup,
+        out,
+        args.n,
+        conditions,
+        seed=args.seed,
+        dpi=args.dpi,
+        size=args.size,
+        progress=progress,
+    )
     print("Conditions: " + ", ".join(f"{k} {v}" for k, v in manifest["counts"].items()))
     print("Teams: " + ", ".join(f"{k} {v}" for k, v in manifest["profiles"].items()))
     return 0
@@ -79,13 +87,24 @@ def _evaluate(args: argparse.Namespace) -> int:
     out = Path(args.out) if args.out else dataset / "report"
     report.write(out)
     m = report.overall.metrics()
-    print(f"Reader {args.reader} on {m['sheets']} sheets: question accuracy "
-          f"{m['question_accuracy']:.2%}, silent errors {m['silent_errors']} "
-          f"({m['silent_error_rate']:.2%}), team accuracy {m['team_accuracy']:.2%}")  # fmt: skip
+    print(
+        f"Reader {args.reader} on {m['sheets']} sheets: question accuracy "
+        f"{m['question_accuracy']:.2%}, silent errors {m['silent_errors']} "
+        f"({m['silent_error_rate']:.2%}), team accuracy {m['team_accuracy']:.2%}"
+    )
     print(f"Report: {out / 'report.md'}")
     if args.require_perfect and not report.perfect:
         print("Not perfect (--require-perfect)")
         return 1
+    if args.baseline:
+        baseline = json.loads(Path(args.baseline).read_text())
+        problems = regressions(report.to_dict(), baseline)
+        if problems:
+            print("Worse than the approved baseline:")
+            for problem in problems:
+                print(f"  - {problem}")
+            return 1
+        print(f"No regression against {args.baseline}")
     return 0
 
 
@@ -129,8 +148,9 @@ def _label_template(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="python -m app.harness",
-                                     description="Fake-sheet test harness")  # fmt: skip
+    parser = argparse.ArgumentParser(
+        prog="python -m app.harness", description="Fake-sheet test harness"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     def event_args(p: argparse.ArgumentParser) -> None:
@@ -152,6 +172,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reader", choices=sorted(READERS), default="oracle")
     p.add_argument("--out", help="default: <dataset>/report")
     p.add_argument("--require-perfect", action="store_true", help="exit 1 unless 100%%")
+    p.add_argument(
+        "--baseline",
+        metavar="REPORT_JSON",
+        help="exit 1 if silent errors or flag rate are worse than this report",
+    )
     p.set_defaults(func=_evaluate)
 
     p = sub.add_parser("contact-sheet", help="tile sample images into one JPEG")
