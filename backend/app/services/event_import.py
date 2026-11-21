@@ -174,7 +174,7 @@ def describe_error(err: ErrorDetails) -> str:
     got = err.get("input")
     ctx = err.get("ctx") or {}
 
-    if kind == "missing" or (kind == "too_short" and name == "correct"):
+    if kind in ("missing", "string_too_short") or (kind == "too_short" and name == "correct"):
         return f"{name} is blank"
     if kind in _NUMBER_ERRORS:
         return f"{name} must be a number (got {got!r})"
