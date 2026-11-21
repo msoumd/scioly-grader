@@ -232,15 +232,20 @@ def _label_width(questions: Sequence[QuestionSetup]) -> float:
     return 0.12 * INCH + widest * 5.5
 
 
+def _max_rows(pitch: float, area: Box) -> int:
+    return math.floor(area.h / pitch)
+
+
 def _pack(
-    questions: Sequence[QuestionSetup], pitch: float, area: Box, grid: Box
+    questions: Sequence[QuestionSetup], pitch: float, area: Box, grid: Box, cap: int
 ) -> tuple[list[QuestionRow], int, int]:
-    """Fill columns top to bottom, left to right. Columns that would run into the team
-    grid stop above it. Returns (rows, columns used, number of questions placed)."""
+    """Fill columns top to bottom (at most ``cap`` rows each), left to right. Columns that
+    would run into the team grid stop above it.
+    Returns (rows, columns used, number of questions placed)."""
     label_w = _label_width(questions)
     r = _r(min(MAX_BUBBLE_D, pitch - MIN_BUBBLE_GAP) / 2)
-    full_rows = math.floor(area.h / pitch)
-    short_rows = math.floor((grid.y - GAP - area.y) / pitch)
+    full_rows = min(cap, _max_rows(pitch, area))
+    short_rows = min(full_rows, math.floor((grid.y - GAP - area.y) / pitch))
 
     def width(chunk: Sequence[QuestionSetup]) -> float:
         return label_w + max(q.options for q in chunk) * pitch
@@ -296,13 +301,20 @@ def build_layout(setup: EventSetup) -> SheetLayout:
     area = _box(MARGIN, area_top, PAGE_W - 2 * MARGIN, area_bottom - area_top)
     grid = _team_grid(info.team_number_digits, area.right, area.bottom)
 
+    n = len(questions)
     placed = 0
     for pitch in PITCHES:
-        rows, ncols, placed = _pack(questions, pitch, area, grid.box)
-        if placed == len(questions):
+        rows, ncols, placed = _pack(questions, pitch, area, grid.box, _max_rows(pitch, area))
+        if placed == n:
+            # Balance: the fewest rows per column that still fits, so columns come out even.
+            for cap in range(math.ceil(n / ncols), _max_rows(pitch, area)):
+                balanced = _pack(questions, pitch, area, grid.box, cap)
+                if balanced[2] == n:
+                    rows, ncols, placed = balanced
+                    break
             break
     else:
-        raise SheetCapacityError(info.event_id, len(questions), placed)
+        raise SheetCapacityError(info.event_id, n, placed)
 
     date = _format_date(info)
     return SheetLayout(
