@@ -46,6 +46,20 @@ jobs:
           DATABASE_URL=sqlite:///./ci.db uv run alembic check
       - name: Tests (SQLite + Postgres)
         run: uv run pytest -q
+      - name: Build answer sheets for every example event
+        run: |
+          mkdir -p test-output/sheets
+          for f in ../event_setups/*.xlsx; do
+            name="$(basename "${f%.xlsx}")"
+            uv run python -m app.cli make-sheet --from-xlsx "$f" --png \
+              --out "test-output/sheets/${name}.pdf"
+          done
+      - name: Upload answer sheets
+        uses: actions/upload-artifact@v4
+        with:
+          name: answer-sheets
+          path: backend/test-output/sheets/
+          if-no-files-found: error
 
   secrets-scan:
     runs-on: ubuntu-latest

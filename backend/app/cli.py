@@ -160,7 +160,8 @@ def _make_sheet(args: argparse.Namespace, sessions: SessionFactory) -> int:
     out = Path(args.out) if args.out else default
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(render_sheet_pdf(layout))
-    print(f"Wrote {out} ({len(layout.questions)} questions, {layout.columns} columns)")
+    cols = f"{layout.columns} column{'s' if layout.columns != 1 else ''}"
+    print(f"Wrote {out} ({len(layout.questions)} questions, {cols})")
     if args.png:
         png = out.with_suffix(".png")
         png.write_bytes(render_sheet_png(layout))
