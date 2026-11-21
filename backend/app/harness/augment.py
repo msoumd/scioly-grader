@@ -28,6 +28,7 @@ CONDITIONS: tuple[str, ...] = (
     "blur_focus",
     "blur_motion",
     "shadow",  # hand / phone shadow band across the page
+    "glare",  # bright reflection from overhead light washing out part of the page
     "uneven_light",
     "low_light",  # dark and noisy
     "jpeg_heavy",  # strong compression
@@ -69,6 +70,7 @@ def _mild(rng: np.random.Generator) -> dict[str, Any]:
         "gradient": float(rng.uniform(0, 0.12)),
         "light_dir": float(rng.uniform(0, 2 * np.pi)),
         "shadow": 0.0,
+        "glare": 0.0,
         "dark": 1.0,
         "noise": float(rng.uniform(1.5, 3.5)),
         "cast": [float(rng.uniform(0.96, 1.0)), 1.0, float(rng.uniform(1.0, 1.03))],
@@ -109,6 +111,8 @@ def photo_params(condition: str, rng: np.random.Generator, strength: float) -> d
         p["motion"], p["motion_angle"] = int(7 + 14 * s), float(rng.uniform(0, 180))
     elif condition == "shadow":
         p["shadow"] = 0.3 + 0.35 * s
+    elif condition == "glare":
+        p["glare"] = 0.55 + 0.4 * s
     elif condition == "uneven_light":
         p["gradient"] = 0.25 + 0.35 * s
     elif condition == "low_light":
@@ -232,6 +236,17 @@ def _lighting(size: tuple[int, int], p: dict[str, Any], rng: np.random.Generator
     return np.asarray(light * p["dark"], np.float32)
 
 
+def _glare(size: tuple[int, int], strength: float, rng: np.random.Generator) -> FloatImage:
+    """Soft elliptical hot spot: 0 = untouched, 1 = washed out to white."""
+    W, H = size
+    mask = np.zeros((H, W), np.float32)
+    centre = (int(rng.uniform(0.2, 0.8) * W), int(rng.uniform(0.2, 0.8) * H))
+    axes = (int(rng.uniform(0.08, 0.2) * W), int(rng.uniform(0.05, 0.14) * H))
+    cv2.ellipse(mask, centre, axes, float(rng.uniform(0, 180)), 0, 360, 1.0, -1)
+    mask = np.asarray(cv2.GaussianBlur(mask, (0, 0), min(W, H) * 0.04), np.float32)
+    return np.asarray(mask / max(float(mask.max()), 1e-6) * strength, np.float32)
+
+
 def _motion_kernel(length: int, angle: float) -> FloatImage:
     k = np.zeros((length, length), np.float32)
     c = length // 2
@@ -266,6 +281,8 @@ def photograph(
     img = bg * (1 - inside) + warped * inside
 
     img *= _lighting(size, p, rng)[..., None]
+    if p["glare"] > 0:
+        img += (255 - img) * _glare(size, p["glare"], rng)[..., None]
     img *= np.array(p["cast"], np.float32)
     if p["blur"] > 0:
         img = cv2.GaussianBlur(img, (0, 0), p["blur"])

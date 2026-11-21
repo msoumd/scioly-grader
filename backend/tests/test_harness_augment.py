@@ -125,3 +125,16 @@ def test_corner_edge_keeps_page_large(seed: int, sheet: tuple[object, np.ndarray
     assert near_edge.min() < 0.03 * min(SIZE)
     height = np.linalg.norm(c[3] - c[0])
     assert height > 0.75 * SIZE[1]
+
+
+def test_glare_washes_out_a_patch() -> None:
+    from app.harness.augment import _glare
+
+    for seed in range(5):
+        mask = _glare(SIZE, 0.8, np.random.default_rng(seed))
+        assert mask.max() == pytest.approx(0.8)
+        hot = np.count_nonzero(mask > 0.4) / mask.size
+        assert 0.005 < hot < 0.2  # a patch, not the whole page
+    p = photo_params("glare", np.random.default_rng(0), 1.0)
+    assert p["glare"] == pytest.approx(0.95)
+    assert photo_params("clean", np.random.default_rng(0), 1.0)["glare"] == 0
