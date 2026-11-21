@@ -108,3 +108,26 @@ def test_runs_as_module() -> None:
     )
     assert proc.returncode == 0, proc.stderr
     assert "Questions: 54" in proc.stdout
+
+
+def test_forensics_shaped_event_end_to_end(
+    migrated_engine: Engine, capsys: pytest.CaptureFixture[str]
+) -> None:
+    sessions = _sessions(migrated_engine)
+    path = AP_FILE.parent / "EXAMPLE_forensics_event_setup.xlsx"
+    assert main(["import-event", str(path), "--save"], sessions) == 0
+    assert "Saved new event: FOR (11 questions)" in capsys.readouterr().out
+
+    # q25 right (4), q68 right (0.5), q60 wrong; a 3-option question marked "D" is just wrong
+    assert main(["score-demo", "FOR", "25=A,68=D,60=A,62=D"], sessions) == 0
+    out = capsys.readouterr().out
+    assert "Total: 4.50 / 14" in out
+
+    # A question number with no bubbles on this event (26 is free response) is rejected
+    assert main(["score-demo", "FOR", "26=A"], sessions) == 1
+    assert "not in this event: [26]" in capsys.readouterr().out
+
+    # Two events live side by side
+    assert main(["import-event", str(AP_FILE), "--save"], sessions) == 0
+    with Session(migrated_engine) as s:
+        assert sorted(e.code for e in s.scalars(select(Event))) == ["AP", "FOR"]

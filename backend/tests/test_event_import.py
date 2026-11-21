@@ -179,3 +179,28 @@ def test_not_a_workbook(tmp_path: Path) -> None:
     report = import_event_workbook(bad)
     assert not report.ok
     assert report.errors[0].startswith("Could not open notes.xlsx as an .xlsx workbook")
+
+
+# --- the app is event-agnostic: every example setup must import cleanly ---------
+
+EXAMPLES_DIR = AP_FILE.parent
+FORENSICS_FILE = EXAMPLES_DIR / "EXAMPLE_forensics_event_setup.xlsx"
+
+
+@pytest.mark.parametrize("path", sorted(EXAMPLES_DIR.glob("*.xlsx")), ids=lambda p: p.name)
+def test_every_example_setup_imports_cleanly(path: Path) -> None:
+    report = import_event_workbook(path)
+    assert report.ok, report.errors
+    assert report.warnings == []
+
+
+def test_forensics_shaped_event() -> None:
+    """Mostly free response; few bubble questions, numbered with gaps, 3-5 options."""
+    report = import_event_workbook(FORENSICS_FILE)
+    assert report.setup is not None
+    qs = report.setup.questions
+    assert [q.q for q in qs] == [25, 45, 49, 57, 58, 59, 60, 62, 63, 68, 69]
+    assert {q.options for q in qs} == {3, 4, 5}
+    assert report.mcq_points_total == Decimal("14")
+    assert report.setup.event.free_response_max == Decimal("286")
+    assert [q.points for q in qs if q.q in (68, 69)] == [Decimal("0.5"), Decimal("0.5")]
