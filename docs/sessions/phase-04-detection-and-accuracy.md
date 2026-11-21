@@ -37,7 +37,7 @@ Read a photo or scan of a bubble sheet: find the page, identify the event, read 
 
 ## Accuracy work
 
-- Build a large dataset with phase 3 (e.g. 300 A&P sheets across all conditions; plus Forensics if its template is filled).
+- Build a large dataset with phase 3 (e.g. 300 sheets per example event in `event_setups/` across all conditions).
 - Run the evaluator; iterate on thresholds and alignment until targets are met.
 - Run on the real phone photos from phases 2–3, reported separately.
 - **Targets (proposed, Yuvan to confirm):**

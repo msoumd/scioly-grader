@@ -2,6 +2,10 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — The app is event-agnostic
+
+Nothing is built or tuned for a specific test. A&P was only the first example. Each event's numbers (question count, numbering, options per question, points, total, free-response share) come from its setup spreadsheet. `event_setups/` holds examples; CI imports every one of them. The Forensics example copies a real sheet's *structure* (only 11 bubble questions, numbered with gaps, 3–5 options, half points, 286/300 free response), but its correct letters are made up because this repo is public.
+
 ## 2026-11-21 — Scoring rules (phase 1)
 
 **Exact questions:** full points only if the marked bubbles are exactly the key, otherwise 0. Marking an extra bubble on a single-answer question gets 0.
