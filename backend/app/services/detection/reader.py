@@ -92,6 +92,7 @@ class SheetScan:
 
     def to_read(self) -> SheetRead:
         return SheetRead(
+            retake=not self.readable,
             event_code=self.event_code,
             sheet_version=self.sheet_version,
             team_number=self.team_number,

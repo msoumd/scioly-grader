@@ -149,3 +149,13 @@ def test_registry() -> None:
 def test_missing_manifest(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="manifest.json"):
         load_dataset(tmp_path)
+
+
+def test_retake_is_never_silent(dataset: tuple[Path, EventSetup, list[Sample]]) -> None:
+    """A reader that asks for a retake has every question flagged, none silent."""
+    _, setup, samples = dataset
+    report = evaluate(setup, samples, lambda s: SheetRead(retake=True))
+    m = report.overall.metrics()
+    assert m["silent_errors"] == 0 and m["team_silent_errors"] == 0
+    assert m["retake_rate"] == 1.0 and m["flag_rate"] == 1.0
+    assert not report.perfect

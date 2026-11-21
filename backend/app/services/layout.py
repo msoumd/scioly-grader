@@ -185,6 +185,17 @@ def qr_payload(event_id: str, sheet_version: int) -> str:
     return json.dumps({"e": event_id, "v": sheet_version}, separators=(",", ":"))
 
 
+def page_markers() -> list[Marker]:
+    """The four corner markers; the same on every event's sheet."""
+    return _markers()
+
+
+def page_qr_box() -> Box:
+    """Where the QR code is printed; the same on every event's sheet."""
+    qr_x = _markers()[1].quiet.x - QR_QUIET - QR_SIZE
+    return _box(qr_x, MARGIN + QR_QUIET, QR_SIZE, QR_SIZE)
+
+
 def _markers() -> list[Marker]:
     far_x = PAGE_W - MARGIN - MARKER_SIZE
     far_y = PAGE_H - MARGIN - MARKER_SIZE
@@ -288,8 +299,8 @@ def build_layout(setup: EventSetup) -> SheetLayout:
     questions = sorted(setup.questions, key=lambda q: q.q)
     markers = _markers()
 
-    qr_x = markers[1].quiet.x - QR_QUIET - QR_SIZE
-    qr_box = _box(qr_x, MARGIN + QR_QUIET, QR_SIZE, QR_SIZE)
+    qr_box = page_qr_box()
+    qr_x = qr_box.x
     header_x = markers[0].quiet.right + GAP
     header_box = _box(header_x, MARGIN, qr_x - QR_QUIET - GAP - header_x, QR_SIZE)
 
