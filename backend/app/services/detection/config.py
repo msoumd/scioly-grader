@@ -28,6 +28,12 @@ class DetectionConfig:
     blank_threshold: float = 0.15  # below: blank; in between: ambiguous -> human review
     min_mark_level: float = 0.25  # floor for the page's solid-mark level (absolute fill)
     erasure_ratio: float = 2.5  # two marks, one this many times darker: possible erasure
+    coverage_cut: float = 0.5  # 'real pencil' = darker than this share of the solid level
+    coverage_smooth_px: float = 1.2  # blur before measuring coverage, so noise is not pencil
+
+    # --- blurry photos: read conservatively (wider "ask a human" band)
+    blurry_sharpness: float = 0.45  # median printed-ring edge strength below this = blurry
+    blurry_mark_threshold: float = 0.60
 
     # --- team number
     team_mark_threshold: float = 0.22

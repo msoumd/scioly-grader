@@ -75,6 +75,7 @@ class SheetScan:
     mcq_score: Decimal | None = None
     markers_found: tuple[int, ...] = ()
     mark_level: float | None = None  # this page's solid-mark fill (absolute darkness)
+    sharpness: float | None = None  # median edge strength on printed bubble outlines
     warped: Image | None = None  # straightened page, for the review screen
     layout: SheetLayout | None = None
 
@@ -180,23 +181,32 @@ def _row_offset(
     return (rx0 + bx - tx0, ry0 + by - ty0)
 
 
-def _disc_means(dark: Dark, centres: npt.NDArray[np.float64], r: float) -> npt.NDArray[np.float64]:
-    """Mean darkness inside a disc of radius r around each centre."""
+def _disc_pixels(dark: Dark, centres: npt.NDArray[np.float64], r: float) -> Dark:
+    """Darkness of every pixel inside a disc of radius r around each centre (n x pixels)."""
     k = int(np.ceil(r))
     yy, xx = np.mgrid[-k : k + 1, -k : k + 1]
     inside = (xx**2 + yy**2) <= r**2
     offs = np.stack([xx[inside], yy[inside]], axis=1).astype(np.float64)
     pts = centres[:, None, :] + offs[None, :, :]
-    return _sample(dark, pts).mean(axis=1).astype(np.float64)
+    return np.asarray(_sample(dark, pts), np.float32)
 
 
 @dataclass(frozen=True)
 class _Measured:
     bubbles: list[Bubble]
     centres: npt.NDArray[np.float64]  # aligned, pixels
-    raw: npt.NDArray[np.float64]  # mean inner darkness
+    pixels: Dark  # inner-disc darkness samples, one row per bubble
     offset: tuple[int, int] = (0, 0)
     edge_hit: bool = False  # alignment needed the whole search range: don't trust it
+
+    @property
+    def raw(self) -> npt.NDArray[np.float64]:
+        """Mean inner darkness per bubble."""
+        return np.asarray(self.pixels.mean(axis=1), np.float64)
+
+    def coverage(self, cut: float) -> npt.NDArray[np.float64]:
+        """Share of inner-disc pixels darker than ``cut``, per bubble."""
+        return np.asarray((self.pixels > cut).mean(axis=1), np.float64)
 
 
 def edge_map(dark: Dark) -> Dark:
@@ -223,8 +233,8 @@ def _measure_row(
     dx, dy = _row_offset(edges, centres, r, search, around)
     edge = max(abs(dx - around[0]), abs(dy - around[1])) >= search - 1
     aligned = centres + np.array([dx, dy])
-    raw = _disc_means(dark, aligned, r * config.inner_ratio)
-    return _Measured(list(row), aligned, raw, (dx, dy), edge)
+    pixels = _disc_pixels(dark, aligned, r * config.inner_ratio)
+    return _Measured(list(row), aligned, pixels, (dx, dy), edge)
 
 
 def _measure_questions(
@@ -269,6 +279,18 @@ def _measure_team(
     return out
 
 
+def _sharpness(edges: Dark, measured: Sequence[_Measured], s: float) -> float:
+    """How crisp the printed bubble outlines are: median edge strength on the rings."""
+    angles = np.linspace(0, 2 * np.pi, 24, endpoint=False)
+    ring = np.stack([np.cos(angles), np.sin(angles)], axis=1)
+    values = []
+    for m in measured:
+        r = m.bubbles[0].r * s
+        pts = m.centres[:, None, :] + ring[None, :, :] * r
+        values.append(np.median(_sample(edges, pts), axis=1))
+    return float(np.median(np.concatenate(values))) if values else 0.0
+
+
 def _confidence(value: float, lo: float, hi: float) -> float:
     """1 when far from the uncertain band [lo, hi), 0 inside it."""
     if lo <= value < hi:
@@ -281,9 +303,14 @@ def _confidence(value: float, lo: float, hi: float) -> float:
 
 
 def _decide_question(
-    q: int, letters: list[str], rel: list[float], single_answer: bool, config: DetectionConfig
+    q: int,
+    letters: list[str],
+    rel: list[float],
+    single_answer: bool,
+    config: DetectionConfig,
+    hi: float,
 ) -> QuestionRead:
-    lo, hi = config.blank_threshold, config.mark_threshold
+    lo = config.blank_threshold
     marked = [letter for letter, v in zip(letters, rel, strict=True) if v >= hi]
     unsure = [letter for letter, v in zip(letters, rel, strict=True) if lo <= v < hi]
     flags = []
@@ -305,8 +332,8 @@ def _decide_question(
     )
 
 
-def _decide_digit(column: int, rel: list[float], config: DetectionConfig) -> DigitRead:
-    lo, hi = config.team_blank_threshold, config.team_mark_threshold
+def _decide_digit(column: int, rel: list[float], config: DetectionConfig, hi: float) -> DigitRead:
+    lo = config.team_blank_threshold
     marked = [d for d, v in enumerate(rel) if v >= hi]
     unsure = [d for d, v in enumerate(rel) if lo <= v < hi]
     flags = []
@@ -376,8 +403,16 @@ def read_sheet(
     dark = normalise_lighting(warp.page, config)
 
     edges = edge_map(dark)
-    q_measured = _measure_questions(dark, edges, layout, s, config)
-    t_measured = _measure_team(dark, edges, layout, s, config, q_measured)
+    smooth = np.asarray(cv2.GaussianBlur(dark, (0, 0), config.coverage_smooth_px), np.float32)
+    q_measured = _measure_questions(smooth, edges, layout, s, config)
+    t_measured = _measure_team(smooth, edges, layout, s, config, q_measured)
+
+    scan.sharpness = round(_sharpness(edges, q_measured + t_measured, s), 3)
+    blurry = scan.sharpness < config.blurry_sharpness
+    if blurry:
+        scan.page_flags.append("image_blurry")
+    q_hi = config.blurry_mark_threshold if blurry else config.mark_threshold
+    t_hi = config.blurry_mark_threshold if blurry else config.team_mark_threshold
 
     # Blank level per printed letter: most bubbles of each letter are empty.
     by_letter: dict[str, list[float]] = {}
@@ -401,11 +436,35 @@ def read_sheet(
     level = max(level, config.min_mark_level)
     scan.mark_level = round(level, 4)
 
+    # Second measure: how much of the bubble holds real pencil (darker than a fraction of
+    # this page's solid level). A partial fill or light scribble has a patch of real
+    # pencil; an erasure is faint everywhere. Each bubble's score is the larger of the two.
+    cut = config.coverage_cut * level
+    cov_by_letter: dict[str, list[float]] = {}
+    q_cov = [m.coverage(cut) for m in q_measured]
+    for m, cov in zip(q_measured, q_cov, strict=True):
+        for b, c in zip(m.bubbles, cov, strict=True):
+            cov_by_letter.setdefault(b.label, []).append(float(c))
+    cov_blank = {k: float(np.median(v)) for k, v in cov_by_letter.items()}
+    q_score = [
+        [
+            max(f / level, max(0.0, float(c) - cov_blank[b.label]))
+            for b, f, c in zip(m.bubbles, fills, cov, strict=True)
+        ]
+        for m, fills, cov in zip(q_measured, q_fill, q_cov, strict=True)
+    ]
+    team_score = []
+    for m, fills in zip(t_measured, team_fill, strict=True):
+        cov = m.coverage(cut)
+        base = float(np.median(cov))
+        team_score.append(
+            [max(f / level, max(0.0, float(c) - base)) for f, c in zip(fills, cov, strict=True)]
+        )
+
     correct = {q.q: len(q.correct) for q in setup.questions}
-    for row, fills, m in zip(layout.questions, q_fill, q_measured, strict=True):
-        rel = [v / level for v in fills]
+    for row, rel, m in zip(layout.questions, q_score, q_measured, strict=True):
         decided = _decide_question(
-            row.q, [b.label for b in row.bubbles], rel, correct[row.q] == 1, config
+            row.q, [b.label for b in row.bubbles], rel, correct[row.q] == 1, config, q_hi
         )
         if m.edge_hit:
             decided = replace(decided, flags=[*decided.flags, "alignment_uncertain"])
@@ -413,9 +472,7 @@ def read_sheet(
 
     if any(m.edge_hit for m in t_measured):
         scan.team_flags.append("team_alignment_uncertain")
-    scan.digits = [
-        _decide_digit(i, [v / level for v in col], config) for i, col in enumerate(team_fill)
-    ]
+    scan.digits = [_decide_digit(i, col, config, t_hi) for i, col in enumerate(team_score)]
     for d in scan.digits:
         scan.team_flags += [f for f in d.flags if f not in scan.team_flags]
     if all(d.digit is not None for d in scan.digits):
