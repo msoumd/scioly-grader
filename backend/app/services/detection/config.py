@@ -19,6 +19,7 @@ class DetectionConfig:
 
     # --- bubble measurement
     align_search_frac: float = 0.35  # row re-centring search, as a fraction of bubble spacing
+    first_row_search_frac: float = 0.45  # wider for the top row of each column (< 0.5)
     inner_ratio: float = 0.72  # measure fill inside this fraction of the bubble radius
     background_kernel_frac: float = 0.025  # illumination estimate window, fraction of width
 
