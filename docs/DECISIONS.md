@@ -2,6 +2,47 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Reading sheets: method and thresholds (phase 4)
+
+**Method:** classic computer vision (OpenCV), no machine learning, so every decision can be explained and tested. The steps, in `backend/app/services/detection/`:
+
+1. **Load.** JPEG, PNG and iPhone HEIC are accepted, with EXIF rotation applied; each page of a PDF is rendered at 200 dpi. Images are downscaled to 2500 px on the long edge.
+2. **Find the page.** The four ArUco corner markers are located, trying several image enhancements. Three markers are enough (flagged `marker_missing`). With fewer, the reader asks the grader to **retake** the photo, so nothing on that page is guessed.
+3. **Straighten.** The photo is warped onto the printed layout at 200 dpi. Marker IDs fix the orientation, so sideways and upside-down photos work.
+4. **Identify the event** from the QR code. If it can't be read (`event_unknown`), the event the grader picked by hand is used.
+5. **Even out the lighting.** Each pixel's darkness is measured against the paper around it, which removes shadows, gradients and colour casts.
+6. **Line up each row.** Each row of bubbles is matched to its printed circle outlines, following the row above it down the column, which handles curled paper.
+7. **Measure each bubble.** It gets the larger of two scores, both relative to this page's own solid pencil marks:
+   - (a) mean darkness above that letter's blank level, since blank bubbles still hold a printed letter;
+   - (b) the share of the bubble covered by real pencil.
+   
+   Score (b) separates partial and light marks from erasures: an erasure is faint everywhere, while a real mark has a patch of real pencil.
+8. **Decide** marked, blank, or ask a human.
+
+**Thresholds** (`detection/config.py`, chosen on 600 tuning sheets and checked on 600 different held-out sheets):
+
+| Setting | Value | Why |
+|---|---|---|
+| Blank below | 0.15 of the page's solid level | Empty bubbles reach at most ~0.13; erasures sit around 0.05–0.17 |
+| Marked at or above | 0.22 | The faintest real marks (light scribble, partial fill, tick, cross) start around 0.22 |
+| Between the two | → `ambiguous`, human review | Only near-erasures and very faint marks land here |
+| Two+ marks, one 2.5× fainter | → `multiple_marks`, review | Probably an erasure next to an answer |
+| Equally dark double mark | read as given | On a one-answer question it scores 0 under `exact`, which is the rule |
+| Row outline contrast < 70% of page | → `low_contrast`, review | Glare or a dim patch fades marks as much as outlines; boosting was tried and was unsafe |
+| Row needed the whole alignment search | → `alignment_uncertain`, review | Better to ask than to read the wrong row |
+| Printed-outline sharpness < 0.45 | page `image_blurry`: marked ≥ 0.60, blank < 0.06 | Blurry photos read conservatively, so more goes to review |
+| Blank level per letter | lower quartile, capped at page blank + 0.06 | On short tests most teams may pick the same letter; a plain median then called real marks "empty" |
+| Team digit | exactly one clear mark, else flagged | A team number is never guessed |
+
+**Never silent:** an unreadable page is a retake, an uncertain bubble or row goes to review, and an unclear team number is flagged. The accuracy report counts *silent* errors (wrong and not flagged) as the main measure, and CI fails if they increase on a fixed 60-sheet set (`backend/tests/regression/`).
+
+**Speed:** about 0.4 s per photo and 0.6 s for a 12-megapixel iPhone photo, on one CPU core.
+
+**Known limits** (fake photos only so far; real phone photos are to be added in end-to-end testing):
+- Heavy motion blur is usually a retake.
+- Focus blur and glare send more questions to review.
+- Strongly curled paper often flags the team number for a human.
+
 ## 2026-11-21 — Fake-sheet test harness (phase 3)
 
 **Why fakes first.** The reader (phase 4) is judged against thousands of fake photos whose answers are known exactly. That lets us measure accuracy per condition before any real tournament, and catch regressions in CI.
