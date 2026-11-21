@@ -4,6 +4,7 @@ Scores Science Olympiad multiple-choice bubble sheets from phone photos and comb
 
 - Spec and build order: [`docs/STARTER_PROMPT.md`](docs/STARTER_PROMPT.md)
 - Why things are the way they are: [`docs/DECISIONS.md`](docs/DECISIONS.md)
+- Build phases (one plan per session): [`docs/sessions/`](docs/sessions/README.md)
 - Event setup spreadsheets: [`event_setups/`](event_setups/)
 
 ## Layout
