@@ -1,4 +1,6 @@
-# Phase 4 accuracy report (for approval)
+# Phase 4 accuracy report
+
+**Approved by Yuvan on 2026-11-21:** numbers accepted; keep the cautious `multiple_marks` rule.
 
 Measured on **600 held-out fake phone photos**: 300 per example event, generated with a seed that was never used while tuning. All 20 photo conditions are covered, 15 sheets each. Full per-condition tables:
 - [A&P (54 questions)](phase-04-detector-PUSO_2026_AP_event_setup.md)
