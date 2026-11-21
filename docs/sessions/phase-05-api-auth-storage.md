@@ -3,6 +3,7 @@
 **Starter-prompt step:** 4 (API and database)
 **Branch:** `phase-05-api`
 **Depends on:** phase 4 merged **and accuracy approved by Yuvan**
+**Status:** built on branch `phase-05-api`, awaiting review.
 
 ## Goal
 
@@ -60,13 +61,13 @@ Everything the app does, available over HTTP and saved in the database: graders 
 
 ## By the end of this phase
 
-- [ ] Every action in the spec is possible through the API, shown in `/docs`
-- [ ] Graders log in with the PIN and their name; every scan, correction and score records who did it
-- [ ] Original images are always kept; storage works locally and against Supabase (mocked in tests)
-- [ ] Auto-confirm, review, duplicate and re-score rules behave as described and are tested
-- [ ] Results and CSV match a hand-checked example
-- [ ] New migration(s) applied and checked for drift; CI green on SQLite and Postgres
-- [ ] Summary for Yuvan with a short "how to try it" using `/docs`
+- [x] Every action in the spec is possible through the API, shown in `/docs`
+- [x] Graders log in with the PIN and their name; every scan, correction and score records who did it
+- [x] Original images are always kept; storage works locally and against Supabase (mocked in tests)
+- [x] Auto-confirm, review, duplicate and re-score rules behave as described and are tested
+- [x] Results and CSV match a hand-checked example
+- [x] New migration(s) applied and checked for drift; CI green on SQLite and Postgres
+- [x] Summary for Yuvan with a short "how to try it" using `/docs`
 
 ## Review checkpoint for Yuvan
 

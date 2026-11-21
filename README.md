@@ -17,6 +17,7 @@ backend/
     schemas/      Pydantic shapes, e.g. the event-setup import
     services/     scoring, event/teams import (phase 1), sheet layout + PDF (phase 2),
                   detection (phases 3-4)
+    api/          HTTP routes: login, events, teams, scans, review, results (phase 5)
     services/detection/  reading photos: markers, QR, bubbles, flags (phase 4)
     harness/      fake filled sheets, phone-photo simulation, reader evaluation (phase 3)
     cli.py        command-line import, scoring and sheet tools
@@ -60,6 +61,25 @@ uv run python -m app.cli make-sheet --from-xlsx ../event_setups/PUSO_2026_AP_eve
 PDFs go to `backend/data/generated/` (git-ignored). CI also attaches every example event's sheet to each pull request as an `answer-sheets` artifact.
 
 The import report lists every problem with its tab and row number.
+
+## Try the API from your browser
+
+The whole app is available as a web API, with a clickable page at `/docs`:
+
+```bash
+cd backend
+cp .env.example .env   # set TOURNAMENT_PIN, ADMIN_PIN, SESSION_SECRET; for http://localhost also COOKIE_SECURE=false
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
+
+Open http://localhost:8000/docs, then on that page, in order:
+1. `POST /api/login` with the admin PIN and a name. The login cookie is kept for the next calls.
+2. `POST /api/events/import`: upload `event_setups/PUSO_2026_AP_event_setup.xlsx`.
+3. `POST /api/teams/import`: upload a `team_number,team_name` CSV.
+4. `GET /api/events/AP/sheet.pdf` to print a sheet. Fill it in and photograph it, or make a fake photo with `python -m app.harness build`.
+5. `POST /api/scans` with `event_code=AP` and the photo, then `GET /api/scans/{id}` for the result.
+6. `PUT /api/events/AP/teams/{n}/free-response`, then `GET /api/events/AP/results` (or `results.csv`).
 
 ## Read a sheet
 
