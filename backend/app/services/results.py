@@ -34,7 +34,9 @@ class Row:
 
     @property
     def total(self) -> Decimal:
-        return (self.mcq or Decimal(0)) + (self.free_response or Decimal(0))
+        mcq = self.mcq if self.mcq is not None else Decimal("0.00")
+        fr = self.free_response if self.free_response is not None else Decimal("0.00")
+        return mcq + fr
 
     @property
     def missing(self) -> list[str]:

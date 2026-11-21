@@ -59,18 +59,29 @@ def _page(setup_key: str) -> tuple[Any, np.ndarray]:
     return layout, render_sheet_image(layout, 200)
 
 
-def sheet_jpeg(marks: dict[int, list[str]], team: list[list[int]], *, seed: int = 0,
-               condition: str = "clean",
-               styles: dict[str, FillStyle] | None = None) -> bytes:  # fmt: skip
+def sheet_jpeg(
+    marks: dict[int, list[str]],
+    team: list[list[int]],
+    *,
+    seed: int = 0,
+    condition: str = "clean",
+    styles: dict[str, FillStyle] | None = None,
+) -> bytes:
     """A fake phone photo of an A&P sheet with exactly these marks and team digits."""
     setup = ap_setup()
     layout, page = _page("AP")
     fill = {bubble_key(q, x): FillStyle.solid for q, v in marks.items() for x in v}
     fill |= {team_key(c, d): FillStyle.solid for c, ds in enumerate(team) for d in ds}
     fill |= styles or {}
-    truth = SheetTruth(sample_id="t", event_code="AP", sheet_version=1, layout_version=1,
-                       marks={q.q: marks.get(q.q, []) for q in setup.questions},
-                       team_marks=team, fill_styles=fill)  # fmt: skip
+    truth = SheetTruth(
+        sample_id="t",
+        event_code="AP",
+        sheet_version=1,
+        layout_version=1,
+        marks={q.q: marks.get(q.q, []) for q in setup.questions},
+        team_marks=team,
+        fill_styles=fill,
+    )
     rng = np.random.default_rng(seed)
     painted = paint_sheet(page, layout, truth, 200, rng)
     return photograph(painted, condition, rng).jpeg
