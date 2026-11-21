@@ -3,6 +3,7 @@
 **Starter-prompt step:** 3 (detection and scoring, with accuracy report)
 **Branch:** `phase-04-detection`
 **Depends on:** phase 3 merged (harness and evaluator)
+**Status:** built on branch `phase-04-detection`; accuracy report in `docs/reports/phase-04-accuracy-summary.md`, **awaiting Yuvan's approval**.
 
 ## Goal
 
@@ -60,11 +61,11 @@ Read a photo or scan of a bubble sheet: find the page, identify the event, read 
 
 ## By the end of this phase
 
-- [ ] `uv run python -m app.cli read-sheet photo.jpg` prints event, team, marks, flags and score
-- [ ] Accuracy report per condition for fake and real photos, attached to the summary
-- [ ] Targets met, or a clear explanation of which conditions fall short and what the grader would see
-- [ ] Thresholds and their reasons recorded in `DECISIONS.md`
-- [ ] CI regression gate in place
+- [x] `uv run python -m app.cli read-sheet photo.jpg` prints event, team, marks, flags and score
+- [x] Accuracy report per condition for fake photos (real photos deferred to end-to-end testing, by Yuvan's decision)
+- [x] Targets met, or a clear explanation of which conditions fall short and what the grader would see
+- [x] Thresholds and their reasons recorded in `DECISIONS.md`
+- [x] CI regression gate in place
 - [ ] **Yuvan has approved the accuracy numbers in writing** before phase 5 starts
 
 ## Review checkpoint for Yuvan

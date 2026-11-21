@@ -27,6 +27,12 @@ Measured on **600 held-out fake phone photos**: 300 per example event, generated
 - **Focus blur:** read conservatively, with ~15–20% of questions flagged. QR reading often fails on these, so the grader confirms the event by hand.
 - **Team number:** never guessed. Unclear grids (a forgotten or doubled digit, curled paper) are flagged, so team accuracy before review is ~89–91%; every miss is flagged.
 
+## What flagged questions look like
+
+![10 flagged questions](phase-04-flagged-examples.png)
+
+All 10 were read correctly; each flag is caution, not an error. On good photos most flags come from one rule: a solid mark next to a much fainter tick, cross or light mark on the same question (`multiple_marks`). It exists to catch an erasure next to a real answer. Loosening it would cut A&P's review rate below 3%, but would risk letting a real erasure through as an answer.
+
 ## Decision for Yuvan
 - Are these silent-error and flag rates acceptable for the tournament?
-- Is the ~3% review rate on good photos OK? Every flagged question is a quick check on the review screen.
+- Is the ~3% review rate on good photos OK, or should the `multiple_marks` rule be loosened to cut it (slightly more risk on erasures)? Every flagged question is a quick check on the review screen.
