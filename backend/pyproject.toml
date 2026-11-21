@@ -18,6 +18,8 @@ dependencies = [
     "opencv-contrib-python-headless>=5.1.0.95",
     "pypdfium2>=5.15.2",
     "numpy>=2.5.5",
+    "pillow>=13.0.0",
+    "pillow-heif>=1.8.1",
 ]
 
 [dependency-groups]
