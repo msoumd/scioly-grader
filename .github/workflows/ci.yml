@@ -60,6 +60,24 @@ jobs:
           name: answer-sheets
           path: backend/test-output/sheets/
           if-no-files-found: error
+      - name: Fake-sheet harness smoke test (every condition, oracle must be perfect)
+        run: |
+          for f in ../event_setups/*.xlsx; do
+            name="$(basename "${f%.xlsx}")"
+            ds="test-output/harness/${name}"
+            uv run python -m app.harness build --from-xlsx "$f" --n 19 --out "$ds"
+            uv run python -m app.harness evaluate --dataset "$ds" --reader oracle --require-perfect
+            uv run python -m app.harness contact-sheet --dataset "$ds"
+          done
+      - name: Upload harness samples
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-samples
+          path: |
+            backend/test-output/harness/*/contact_sheet.jpg
+            backend/test-output/harness/*/report/
+            backend/test-output/harness/*/000[0-4].*
+          if-no-files-found: error
 
   secrets-scan:
     runs-on: ubuntu-latest
