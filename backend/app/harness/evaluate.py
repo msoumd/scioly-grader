@@ -273,8 +273,13 @@ def evaluate(setup: EventSetup, samples: list[Sample], reader: Reader, *,
     return report
 
 
-def evaluate_dataset(path: Path, reader: Reader, reader_name: str) -> EvalReport:
+def evaluate_dataset(
+    path: Path, make_reader: Callable[[EventSetup], Reader], reader_name: str
+) -> EvalReport:
+    """Load a dataset, make a reader for its event, and evaluate it."""
     setup, samples = load_dataset(path)
     if not samples:
         raise ValueError(f"no labelled samples in {path}")
-    return evaluate(setup, samples, reader, reader_name=reader_name, dataset_name=str(path))
+    return evaluate(
+        setup, samples, make_reader(setup), reader_name=reader_name, dataset_name=str(path)
+    )

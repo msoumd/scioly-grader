@@ -30,7 +30,7 @@ def dataset(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, EventSetup,
 
 def test_oracle_is_perfect(dataset: tuple[Path, EventSetup, list[Sample]]) -> None:
     path, _, _ = dataset
-    report = evaluate_dataset(path, oracle_reader, "oracle")
+    report = evaluate_dataset(path, READERS["oracle"], "oracle")
     m = report.overall.metrics()
     assert report.perfect
     assert m["bubble_accuracy"] == m["question_accuracy"] == m["team_accuracy"] == 1.0
@@ -124,7 +124,7 @@ def test_team_rules() -> None:
 
 def test_report_files(dataset: tuple[Path, EventSetup, list[Sample]], tmp_path: Path) -> None:
     path, _, _ = dataset
-    report = evaluate_dataset(path, blank_reader, "blank")
+    report = evaluate_dataset(path, READERS["blank"], "blank")
     report.write(tmp_path)
     data = json.loads((tmp_path / "report.json").read_text())
     assert data["reader"] == "blank"
@@ -143,7 +143,7 @@ def test_score_error_uses_scoring_rules(dataset: tuple[Path, EventSetup, list[Sa
 
 
 def test_registry() -> None:
-    assert set(READERS) == {"oracle", "blank"}
+    assert set(READERS) == {"oracle", "blank", "detector"}
 
 
 def test_missing_manifest(tmp_path: Path) -> None:
