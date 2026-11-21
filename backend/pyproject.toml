@@ -20,6 +20,8 @@ dependencies = [
     "numpy>=2.5.5",
     "pillow>=13.0.0",
     "pillow-heif>=1.8.1",
+    "itsdangerous>=2.2.0",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]
@@ -29,6 +31,7 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
     "hypothesis>=6.170.17",
+    "respx>=0.23.1",
 ]
 
 [tool.ruff]
