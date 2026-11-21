@@ -159,3 +159,19 @@ def test_retake_is_never_silent(dataset: tuple[Path, EventSetup, list[Sample]]) 
     assert m["silent_errors"] == 0 and m["team_silent_errors"] == 0
     assert m["retake_rate"] == 1.0 and m["flag_rate"] == 1.0
     assert not report.perfect
+
+
+def test_regression_gate() -> None:
+    from app.harness.evaluate import regressions
+
+    def rep(silent: int, team: int, flag: float, sheets: int = 10) -> dict:  # type: ignore[type-arg]
+        return {"overall": {"silent_errors": silent, "team_silent_errors": team,
+                            "flag_rate": flag, "sheets": sheets}}  # fmt: skip
+
+    base = rep(1, 0, 0.02)
+    assert regressions(rep(1, 0, 0.02), base) == []
+    assert regressions(rep(0, 0, 0.03), base) == []  # better or within slack
+    assert "silent question errors: 2" in regressions(rep(2, 0, 0.02), base)[0]
+    assert "silent team-number errors: 1" in regressions(rep(1, 1, 0.02), base)[0]
+    assert "flag rate" in regressions(rep(0, 0, 0.10), base)[0]  # can't cheat by flagging
+    assert "dataset changed" in regressions(rep(1, 0, 0.02, sheets=11), base)[0]

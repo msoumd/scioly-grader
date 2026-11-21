@@ -56,8 +56,14 @@ def load_dataset(path: Path) -> tuple[EventSetup, list[Sample]]:
     for truth_path in sorted(path.glob("*.json")):
         if truth_path.name in _SKIP_JSON or not _SAMPLE_ID.match(truth_path.stem):
             continue
-        image = next((truth_path.with_suffix(s) for s in IMAGE_SUFFIXES
-                      if truth_path.with_suffix(s).exists()), None)  # fmt: skip
+        image = next(
+            (
+                truth_path.with_suffix(s)
+                for s in IMAGE_SUFFIXES
+                if truth_path.with_suffix(s).exists()
+            ),
+            None,
+        )
         if image is None:
             raise FileNotFoundError(f"no image next to {truth_path.name}")
         samples.append(Sample(truth_path.stem, image, SheetTruth.load(truth_path)))
@@ -186,13 +192,23 @@ class EvalReport:
                 f"{pct(m['event_read_rate'])} | {pct(m['score_exact_rate'])} | "
                 f"{num(m['score_error_max'])} |"
             )
-        lines += ["", "## Bubble accuracy by how it was filled", "",
-                  "| Fill style | Bubbles | Accuracy |", "|---|---:|---:|"]  # fmt: skip
+        lines += [
+            "",
+            "## Bubble accuracy by how it was filled",
+            "",
+            "| Fill style | Bubbles | Accuracy |",
+            "|---|---:|---:|",
+        ]
         for style, m in d["by_fill_style"].items():
             lines.append(f"| {style} | {m['bubbles']} | {pct(m['accuracy'])} |")
         if self.worst:
-            lines += ["", "## Sheets with silent errors (first 20)", "",
-                      "| Sample | Condition | Questions |", "|---|---|---|"]  # fmt: skip
+            lines += [
+                "",
+                "## Sheets with silent errors (first 20)",
+                "",
+                "| Sample | Condition | Questions |",
+                "|---|---|---|",
+            ]
             for w in self.worst[:20]:
                 lines.append(f"| {w['sample']} | {w['condition']} | {w['questions']} |")
         return "\n".join(lines) + "\n"
@@ -210,8 +226,14 @@ def _score(setup: EventSetup, marks: dict[int, set[str]]) -> Decimal:
     return score_sheet({q.q: marks.get(q.q, set()) for q in setup.questions}, setup).total
 
 
-def evaluate(setup: EventSetup, samples: list[Sample], reader: Reader, *,
-             reader_name: str = "reader", dataset_name: str = "") -> EvalReport:  # fmt: skip
+def evaluate(
+    setup: EventSetup,
+    samples: list[Sample],
+    reader: Reader,
+    *,
+    reader_name: str = "reader",
+    dataset_name: str = "",
+) -> EvalReport:
     report = EvalReport(reader=reader_name, dataset=dataset_name)
     for sample in samples:
         truth = sample.truth
@@ -288,3 +310,26 @@ def evaluate_dataset(
     return evaluate(
         setup, samples, make_reader(setup), reader_name=reader_name, dataset_name=str(path)
     )
+
+
+FLAG_RATE_SLACK = 0.02  # a regression gate must not be passable by flagging everything
+
+
+def regressions(current: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
+    """What got worse versus an approved report (both ``EvalReport.to_dict()`` output)."""
+    cur, base = current["overall"], baseline["overall"]
+    problems = []
+    for key, label in (
+        ("silent_errors", "silent question errors"),
+        ("team_silent_errors", "silent team-number errors"),
+    ):
+        if cur[key] > base[key]:
+            problems.append(f"{label}: {cur[key]} (approved baseline {base[key]})")
+    if (cur["flag_rate"] or 0) > (base["flag_rate"] or 0) + FLAG_RATE_SLACK:
+        problems.append(
+            f"flag rate {cur['flag_rate']:.2%} is more than {FLAG_RATE_SLACK:.0%} above the "
+            f"approved {base['flag_rate']:.2%}"
+        )
+    if cur["sheets"] != base["sheets"]:
+        problems.append(f"dataset changed: {cur['sheets']} sheets vs {base['sheets']} in baseline")
+    return problems
