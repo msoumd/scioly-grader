@@ -25,6 +25,11 @@ build/
 *.sqlite3
 **/data/uploads/
 **/data/generated/
+**/data/harness/
+# Real phone photos: only README and staff-filled samples (no student info) may be committed
+**/data/real_samples/*
+!**/data/real_samples/README.md
+!**/data/real_samples/staff/
 backend/test-output/
 
 # Node / frontend
