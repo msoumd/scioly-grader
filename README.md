@@ -15,8 +15,9 @@ backend/
     api/          FastAPI routes
     db/           SQLAlchemy models + session (SQLite dev, Supabase Postgres prod)
     schemas/      Pydantic shapes, e.g. the event-setup import
-    services/     scoring, event/teams import (phase 1), detection (phases 3-4)
-    cli.py        command-line import and scoring tools
+    services/     scoring, event/teams import (phase 1), sheet layout + PDF (phase 2),
+                  detection (phases 3-4)
+    cli.py        command-line import, scoring and sheet tools
   migrations/     Alembic migrations — the only way the schema changes
   tests/
 event_setups/     example supervisor spreadsheets (the app works for any event)
@@ -46,6 +47,15 @@ uv run python -m app.cli import-event ../event_setups/PUSO_2026_AP_event_setup.x
 uv run python -m app.cli import-teams path/to/teams.csv --save                               # team_number,team_name
 uv run python -m app.cli score-demo AP "1=D,2=A,9=C,D"                                       # score some marks
 ```
+
+Print an answer sheet (print at 100% / actual size):
+
+```bash
+uv run python -m app.cli make-sheet AP                                                     # saved event
+uv run python -m app.cli make-sheet --from-xlsx ../event_setups/PUSO_2026_AP_event_setup.xlsx --png
+```
+
+PDFs go to `backend/data/generated/` (git-ignored). CI also attaches every example event's sheet to each pull request as an `answer-sheets` artifact.
 
 The import report lists every problem with its tab and row number. Rules for re-importing and scoring are in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 

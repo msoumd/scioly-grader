@@ -2,6 +2,26 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Answer-sheet layout and libraries (phase 2)
+
+**One layout, two users.** `app/services/layout.py` computes every position on the page (markers, QR, team grid, each bubble) from the event setup. The PDF renderer only draws that, and the reader (phase 4) will only read that, so the printed page and the reader cannot disagree. Positions are in PDF points from the top-left corner, rounded to 0.01 pt, and golden files catch any accidental change. `LAYOUT_VERSION` must go up whenever positions change.
+
+**Look.** It follows the ZipGrade-style sheet supervisors already use: lettered bubbles in columns, a team-name box at the top left, a team-number grid at the bottom right (one column per digit, write-in boxes above, digits 0–9). Added on top are four corner markers and a QR code. Columns are balanced so they come out even.
+
+**Fitting the page.** Bubble spacing starts at 0.25 in and shrinks in 0.01 in steps down to 0.21 in only if needed. 100 five-choice questions fit at full spacing. If an event cannot fit even at 0.21 in, the import report says so and names how many would fit; the app never prints a cramped sheet.
+
+**Machine-readable parts.**
+- Four ArUco markers (`DICT_4X4_50`, IDs 0–3 clockwise from top-left, 0.6 in) let the reader find the page and its orientation from any phone photo, even upside down.
+- The QR code holds `{"e":"<event_id>","v":<sheet_version>}`, so a scan knows which event and key to use. The error correction is at least M; the library raises it to Q when that fits at the same size.
+
+**Copier-safe.** Pure black on white, no grey. Bubble letters are printed in thin black, which the reader will account for. The header asks for printing at 100% (actual size).
+
+**Libraries.**
+- `reportlab` draws the PDF; it was chosen because it can produce byte-identical files, so the same event always gives the same PDF.
+- `segno` makes the QR code (pure Python).
+- `opencv-contrib-python-headless` makes the ArUco markers and will read sheets in phase 4.
+- `pypdfium2` turns the PDF into an image for tests and the phase 3 fake-sheet generator.
+
 ## 2026-11-21 — The app is event-agnostic
 
 Nothing is built or tuned for a specific test. A&P was only the first example. Each event's numbers (question count, numbering, options per question, points, total, free-response share) come from its setup spreadsheet. `event_setups/` holds examples; CI imports every one of them. The Forensics example copies a real sheet's *structure* (only 11 bubble questions, numbered with gaps, 3–5 options, half points, 286/300 free response), but its correct letters are made up because this repo is public.

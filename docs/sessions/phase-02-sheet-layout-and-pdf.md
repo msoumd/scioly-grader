@@ -3,6 +3,7 @@
 **Starter-prompt step:** 2, first half (scantron PDF generator)
 **Branch:** `phase-02-sheet-pdf`
 **Depends on:** phase 1 merged (imported events)
+**Status:** built on branch `phase-02-sheet-pdf`, awaiting review.
 
 ## Goal
 
@@ -63,10 +64,10 @@ The PDF renderer (this phase) draws from `SheetLayout`; the detector (phase 4) r
 
 ## By the end of this phase
 
-- [ ] `make-sheet AP` produces a one-page Letter PDF that looks like the current A&P answer sheet layout (bubbles in columns, team grid, name box) plus markers and QR
-- [ ] Layout is defined once in `layout.py` and covered by geometry, determinism and golden tests
-- [ ] Rendered PNG round-trips the QR and all four markers in tests
-- [ ] Capacity rule enforced with a clear error
+- [x] `make-sheet` produces a one-page Letter PDF for each example event, in the style of the current A&P answer sheet (bubbles in columns, team grid, name box) plus markers and QR
+- [x] Layout is defined once in `layout.py` and covered by geometry, determinism and golden tests
+- [x] Rendered PNG round-trips the QR and all four markers in tests
+- [x] Capacity rule enforced with a clear error
 - [ ] PDF attached to the summary for Yuvan
 - [ ] CI green
 
