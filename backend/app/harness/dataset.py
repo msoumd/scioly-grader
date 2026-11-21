@@ -30,6 +30,7 @@ from app.services.sheet_pdf import render_sheet_image
 MANIFEST = "manifest.json"
 DATASET_FORMAT = 1
 _SAMPLE_FILE = re.compile(r"^\d{4,}\.(jpg|json)$")
+LABEL_H = 26  # contact-sheet caption height, pixels
 
 
 def resolve_conditions(spec: str) -> list[str]:
@@ -145,12 +146,11 @@ def write_contact_sheet(dataset: Path, out: Path, count: int = 20, cols: int = 5
         img = cv2.imread(str(dataset / f"{t.sample_id}.jpg"), cv2.IMREAD_COLOR)
         if img is None:
             raise FileNotFoundError(f"missing or unreadable image for sample {t.sample_id}")
-        tile = cv2.resize(img, thumb, interpolation=cv2.INTER_AREA)
-        label = f"{t.sample_id} {t.condition}"
-        cv2.rectangle(tile, (0, 0), (thumb[0], 26), (255, 255, 255), -1)
-        cv2.putText(tile, label, (5, 19), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 200), 1,
-                    cv2.LINE_AA)  # fmt: skip
-        tiles.append(tile)
+        photo = cv2.resize(img, thumb, interpolation=cv2.INTER_AREA)
+        bar = np.full((LABEL_H, thumb[0], 3), 255, np.uint8)  # label above, never over, the photo
+        cv2.putText(bar, f"{t.sample_id} {t.condition}", (5, 19), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55, (0, 0, 200), 1, cv2.LINE_AA)  # fmt: skip
+        tiles.append(np.vstack([bar, photo]))
     while len(tiles) % cols:
         tiles.append(np.full_like(tiles[0], 255))
     grid = np.vstack([np.hstack(tiles[i : i + cols]) for i in range(0, len(tiles), cols)])

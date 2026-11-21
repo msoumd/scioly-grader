@@ -85,7 +85,7 @@ def test_contact_sheet(tmp_path: Path) -> None:
     build_dataset(_setup(), tmp_path / "ds", 7, dpi=100, size=SMALL)
     out = tmp_path / "contact.jpg"
     assert write_contact_sheet(tmp_path / "ds", out, count=5, cols=3, thumb=(90, 120)) == 5
-    assert cv2.imread(str(out)).shape == (240, 270, 3)
+    assert cv2.imread(str(out)).shape == (2 * (120 + 26), 270, 3)
 
 
 def test_resolve_conditions() -> None:

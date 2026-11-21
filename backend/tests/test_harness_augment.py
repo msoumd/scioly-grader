@@ -111,3 +111,17 @@ def test_strength_scales_effect() -> None:
 def test_unknown_condition() -> None:
     with pytest.raises(ValueError, match="unknown condition 'fog'"):
         photo_params("fog", np.random.default_rng(0), 0.5)
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_corner_edge_keeps_page_large(seed: int, sheet: tuple[object, np.ndarray]) -> None:
+    """The page is nudged into frame, not shrunk: one corner hugs the frame edge and the
+    page stays about as big as asked."""
+    _, page = sheet
+    photo = photograph(page, "corner_edge", np.random.default_rng(seed), size=SIZE)
+    c = np.array(photo.corners)
+    assert (c >= -1).all() and (c[:, 0] <= SIZE[0] + 1).all() and (c[:, 1] <= SIZE[1] + 1).all()
+    near_edge = np.minimum(c, np.array(SIZE) - c).min(axis=1)
+    assert near_edge.min() < 0.03 * min(SIZE)
+    height = np.linalg.norm(c[3] - c[0])
+    assert height > 0.75 * SIZE[1]

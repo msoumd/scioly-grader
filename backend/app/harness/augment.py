@@ -180,8 +180,10 @@ def _corners(page_w: int, page_h: int, p: dict[str, Any], size: tuple[int, int])
         tx = m * W - c[k, 0] if c[k, 0] < W / 2 else W - m * W - c[k, 0]
         ty = m * H - c[k, 1] if c[k, 1] < H / 2 else H - m * H - c[k, 1]
         c += np.array([tx, ty])
-        for _ in range(40):  # shrink toward that corner until the whole page is in frame
-            if (c >= 0).all() and (c[:, 0] <= W).all() and (c[:, 1] <= H).all():
+        frame = np.array([W, H], np.float64)
+        for _ in range(40):  # nudge back into frame; shrink only if it truly cannot fit
+            c += np.maximum(-c.min(axis=0), 0) - np.maximum(c.max(axis=0) - frame, 0)
+            if (c >= 0).all() and (c <= frame).all():
                 break
             c = c[k] + (c - c[k]) * 0.97
     return c
