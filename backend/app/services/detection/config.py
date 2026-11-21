@@ -30,6 +30,8 @@ class DetectionConfig:
     erasure_ratio: float = 2.5  # two+ marks, one this many times darker: possible erasure
     coverage_cut: float = 0.5  # 'real pencil' = darker than this share of the solid level
     coverage_smooth_px: float = 1.2  # blur before measuring coverage, so noise is not pencil
+    letter_ink_margin: float = 0.06  # how much darker one printed letter may be than another
+    low_contrast_frac: float = 0.70  # row outlines fainter than this share of the page's: review
 
     # --- blurry photos: read conservatively (wider "ask a human" band)
     blurry_sharpness: float = 0.45  # median printed-ring edge strength below this = blurry

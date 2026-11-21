@@ -38,7 +38,7 @@ Dark = npt.NDArray[np.float32]
 SetupLookup = Callable[[str, int], EventSetup | None]
 
 # Question flags that send a question to the review screen. "blank" is informational.
-REVIEW_FLAGS = frozenset({"ambiguous", "multiple_marks", "alignment_uncertain"})
+REVIEW_FLAGS = frozenset({"ambiguous", "multiple_marks", "alignment_uncertain", "low_contrast"})
 
 
 @dataclass(frozen=True)
@@ -198,6 +198,7 @@ class _Measured:
     pixels: Dark  # inner-disc darkness samples, one row per bubble
     offset: tuple[int, int] = (0, 0)
     edge_hit: bool = False  # alignment needed the whole search range: don't trust it
+    ring: float = 0.0  # median darkness of this row's printed outlines (local contrast)
 
     @property
     def raw(self) -> npt.NDArray[np.float64]:
@@ -234,7 +235,10 @@ def _measure_row(
     edge = max(abs(dx - around[0]), abs(dy - around[1])) >= search - 1
     aligned = centres + np.array([dx, dy])
     pixels = _disc_pixels(dark, aligned, r * config.inner_ratio)
-    return _Measured(list(row), aligned, pixels, (dx, dy), edge)
+    angles = np.linspace(0, 2 * np.pi, 32, endpoint=False)
+    ring_pts = aligned[:, None, :] + np.stack([np.cos(angles), np.sin(angles)], axis=1)[None] * r
+    ring = float(np.median(_sample(dark, ring_pts).mean(axis=1)))
+    return _Measured(list(row), aligned, pixels, (dx, dy), edge, ring)
 
 
 def _measure_questions(
@@ -277,6 +281,10 @@ def _measure_team(
         around = nearest.offset if nearest else (0, 0)
         out.append(_measure_row(dark, edges, column, s, config, around))
     return out
+
+
+def _faded(m: _Measured, page_ring: float, config: DetectionConfig) -> bool:
+    return m.ring < config.low_contrast_frac * page_ring
 
 
 def _sharpness(edges: Dark, measured: Sequence[_Measured], s: float) -> float:
@@ -417,12 +425,24 @@ def read_sheet(
     t_lo = config.blurry_blank_threshold if blurry else config.team_blank_threshold
     t_hi = config.blurry_mark_threshold if blurry else config.team_mark_threshold
 
-    # Blank level per printed letter: most bubbles of each letter are empty.
+    # Local contrast: glare, a dim patch or a slightly misplaced row all make the printed
+    # outlines fainter than elsewhere on the page. Such rows are not trusted: they go to
+    # review (boosting them instead was tried and turned misaligned blanks into marks).
+    page_ring = float(np.median([m.ring for m in q_measured + t_measured]))
+    low_contrast = {id(m) for m in q_measured + t_measured if _faded(m, page_ring, config)}
+
+    # Blank level per printed letter (blank bubbles still hold the printed letter). The
+    # lower quartile, capped near the page's overall blank level, so a letter that most
+    # teams chose on a short test cannot redefine "empty".
+    page_blank = float(np.median([v for m in q_measured for v in m.raw]))
     by_letter: dict[str, list[float]] = {}
     for m in q_measured:
         for b, v in zip(m.bubbles, m.raw, strict=True):
             by_letter.setdefault(b.label, []).append(float(v))
-    blank_level = {k: float(np.median(v)) for k, v in by_letter.items()}
+    blank_level = {
+        k: min(float(np.percentile(v, 25)), page_blank + config.letter_ink_margin)
+        for k, v in by_letter.items()
+    }
     q_fill = [
         [max(0.0, float(v) - blank_level[b.label]) for b, v in zip(m.bubbles, m.raw, strict=True)]
         for m in q_measured
@@ -448,7 +468,11 @@ def read_sheet(
     for m, cov in zip(q_measured, q_cov, strict=True):
         for b, c in zip(m.bubbles, cov, strict=True):
             cov_by_letter.setdefault(b.label, []).append(float(c))
-    cov_blank = {k: float(np.median(v)) for k, v in cov_by_letter.items()}
+    page_cov = float(np.median([c for cov in q_cov for c in cov]))
+    cov_blank = {
+        k: min(float(np.percentile(v, 25)), page_cov + config.letter_ink_margin)
+        for k, v in cov_by_letter.items()
+    }
     q_score = [
         [
             max(f / level, max(0.0, float(c) - cov_blank[b.label]))
@@ -475,10 +499,14 @@ def read_sheet(
         )
         if m.edge_hit:
             decided = replace(decided, flags=[*decided.flags, "alignment_uncertain"])
+        if id(m) in low_contrast:
+            decided = replace(decided, flags=[*decided.flags, "low_contrast"])
         scan.questions[row.q] = decided
 
     if any(m.edge_hit for m in t_measured):
         scan.team_flags.append("team_alignment_uncertain")
+    if any(id(m) in low_contrast for m in t_measured):
+        scan.team_flags.append("team_low_contrast")
     scan.digits = [_decide_digit(i, col, t_lo, t_hi) for i, col in enumerate(team_score)]
     for d in scan.digits:
         scan.team_flags += [f for f in d.flags if f not in scan.team_flags]
