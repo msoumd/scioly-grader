@@ -131,3 +131,52 @@ def test_forensics_shaped_event_end_to_end(
     assert main(["import-event", str(AP_FILE), "--save"], sessions) == 0
     with Session(migrated_engine) as s:
         assert sorted(e.code for e in s.scalars(select(Event))) == ["AP", "FOR"]
+
+
+# --- make-sheet ---------------------------------------------------------------
+
+
+def test_make_sheet_from_xlsx(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = tmp_path / "ap.pdf"
+    assert main(["make-sheet", "--from-xlsx", str(AP_FILE), "--out", str(out), "--png"]) == 0
+    assert out.read_bytes().startswith(b"%PDF")
+    assert out.with_suffix(".png").read_bytes().startswith(b"\x89PNG")
+    text = capsys.readouterr().out
+    assert "54 questions, 2 columns" in text and "Print at 100%" in text
+
+
+def test_make_sheet_from_database_matches_xlsx(
+    migrated_engine: Engine, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    sessions = _sessions(migrated_engine)
+    assert main(["import-event", str(AP_FILE), "--save"], sessions) == 0
+    from_db, from_file = tmp_path / "db.pdf", tmp_path / "file.pdf"
+    assert main(["make-sheet", "AP", "--out", str(from_db)], sessions) == 0
+    assert main(["make-sheet", "--from-xlsx", str(AP_FILE), "--out", str(from_file)]) == 0
+    assert from_db.read_bytes() == from_file.read_bytes()
+
+
+def test_make_sheet_default_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    path = AP_FILE.parent / "EXAMPLE_forensics_event_setup.xlsx"
+    assert main(["make-sheet", "--from-xlsx", str(path)]) == 0
+    assert (tmp_path / "data" / "generated" / "FOR_v1.pdf").exists()
+
+
+@pytest.mark.parametrize("argv", [["make-sheet"], ["make-sheet", "AP", "--from-xlsx", "x.xlsx"]])
+def test_make_sheet_needs_exactly_one_source(argv: list[str]) -> None:
+    assert main(argv) == 2
+
+
+def test_make_sheet_unknown_event(
+    migrated_engine: Engine, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["make-sheet", "NOPE"], _sessions(migrated_engine)) == 1
+    assert "No event with event_id 'NOPE'" in capsys.readouterr().out
+
+
+def test_make_sheet_broken_xlsx(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["make-sheet", "--from-xlsx", str(FIXTURES / "many_problems.xlsx")]) == 1
+    assert "FAILED" in capsys.readouterr().out

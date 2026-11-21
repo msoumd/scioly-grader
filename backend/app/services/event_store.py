@@ -19,7 +19,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Event, Question, Scan
-from app.schemas.event_setup import EventSetup, QuestionSetup
+from app.schemas.event_setup import EventInfo, EventSetup, QuestionSetup
 
 
 class SaveAction(StrEnum):
@@ -122,9 +122,29 @@ def question_setup_from_row(row: Question) -> QuestionSetup:
     )
 
 
-def load_questions(session: Session, code: str) -> list[QuestionSetup]:
-    """Questions of a saved event, as scoring-ready ``QuestionSetup`` objects."""
+def _get_event(session: Session, code: str) -> Event:
     event = session.scalars(select(Event).where(Event.code == code)).one_or_none()
     if event is None:
         raise LookupError(f"No event with event_id {code!r} in the database")
-    return [question_setup_from_row(q) for q in event.questions]
+    return event
+
+
+def load_questions(session: Session, code: str) -> list[QuestionSetup]:
+    """Questions of a saved event, as scoring-ready ``QuestionSetup`` objects."""
+    return [question_setup_from_row(q) for q in _get_event(session, code).questions]
+
+
+def load_event_setup(session: Session, code: str) -> EventSetup:
+    """A saved event rebuilt as the same ``EventSetup`` its spreadsheet produced."""
+    event = _get_event(session, code)
+    info = EventInfo(
+        event_id=event.code,
+        event_name=event.name,
+        tournament=event.tournament,
+        date=event.event_date,
+        sheet_version=event.sheet_version,
+        team_number_digits=event.team_number_digits,
+        total_points=event.total_points,
+        free_response_max=event.free_response_max,
+    )
+    return EventSetup(event=info, questions=[question_setup_from_row(q) for q in event.questions])

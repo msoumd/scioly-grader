@@ -204,3 +204,21 @@ def test_forensics_shaped_event() -> None:
     assert report.mcq_points_total == Decimal("14")
     assert report.setup.event.free_response_max == Decimal("286")
     assert [q.points for q in qs if q.q in (68, 69)] == [Decimal("0.5"), Decimal("0.5")]
+
+
+def test_report_says_sheet_fits() -> None:
+    report = import_event_workbook(AP_FILE)
+    assert report.sheet_note == "Sheet: fits on one page (2 columns, bubbles 0.25 in apart)"
+    assert report.sheet_note in report.to_text()
+
+
+def test_event_too_big_for_one_page_is_an_import_error(tmp_path: Path) -> None:
+    from tests.fixtures.event_setup.build import EVENT, build
+
+    questions = [[q, 1, 9, "A", "exact", None, None] for q in range(1, 201)]
+    event = [(k, 200 if k == "total_points" else 0 if k == "free_response_max" else v)
+             for k, v in EVENT]  # fmt: skip
+    report = import_event_workbook(build(tmp_path / "big.xlsx", event=event, questions=questions))
+    assert not report.ok
+    assert len(report.errors) == 1
+    assert report.errors[0].startswith("Sheet: Event TEST has 200 bubble questions but only ")
