@@ -1,6 +1,7 @@
 import os
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from alembic import command
@@ -9,6 +10,9 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from app.db.session import make_engine
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -48,3 +52,19 @@ def db(migrated_engine: Engine) -> Iterator[Session]:
     with Session(migrated_engine) as session:
         yield session
         session.rollback()
+
+
+@pytest.fixture
+def api(migrated_engine: Engine, tmp_path: Path) -> Iterator["TestClient"]:
+    """A test client for the full app on a fresh database (SQLite and Postgres).
+    Reads run inside the request so results are ready immediately."""
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.services.storage import LocalStorage
+    from tests.api_support import settings_for
+
+    settings = settings_for(tmp_path)
+    app = create_app(settings, migrated_engine, LocalStorage(settings.upload_dir))
+    with TestClient(app, base_url="https://testserver") as client:
+        yield client
