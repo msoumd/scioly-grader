@@ -2,6 +2,44 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — API, login, storage and counting rules (phase 5)
+
+**Login.**
+- A grader types the shared tournament PIN and their name; supervisors use a separate admin PIN.
+- The session is a signed, HTTP-only, Secure, SameSite=Lax cookie that lasts one tournament day. There is no session table: the signature (`SESSION_SECRET`) is the proof.
+- PINs are compared in constant time, and 10 wrong PINs from one IP in 5 minutes block that IP for a while, so the PIN can't be brute-forced.
+- Admin-only actions: importing events and teams, choosing between duplicate scans, re-scoring, and reading the audit log.
+
+**Uploads.**
+- A photo (JPEG, PNG, HEIC) or PDF, up to 25 MB and 60 pages. The type is checked by the file's content, never by its name.
+- The original is stored under a random key and never modified; the uploaded filename is never used.
+- Each PDF page becomes its own scan, all pointing at the one original.
+- Uploads return at once and are read in a small background thread pool. The phone checks back every second or so, which works reliably on phones.
+- Scans left half-read by a server restart are retried on startup.
+
+**Storage.**
+- Local folder in development.
+- In production, a **private** Supabase Storage bucket, reached with the service-role key from the server only. Viewers get 10-minute signed links, so the bucket is never public.
+- Stored per scan: the original upload, the straightened page, and crops of the flagged questions.
+
+**Counting.**
+- A scan **counts automatically** only if nothing on it is flagged, its team number was read, it is on the teams list, and no other scan already counts for that team.
+- Everything else waits for a grader.
+- A second scan for a team that already counts is marked `duplicate_team`. It never replaces the first by itself: a supervisor picks one, and the rest are discarded. The database also enforces at most one counted scan per team.
+- If the QR says a different event than the grader picked, the sheet's own event wins and the scan is flagged `event_mismatch`.
+
+**Edits.**
+- Corrections from the review screen re-score the scan.
+- Changing the team on a counted scan un-counts it until it is confirmed again.
+- Every change to an existing score (marks, team, status, counted, free response, re-score) is in the audit log with who, when, old and new value.
+
+**Results.**
+- Total = counted scan's multiple choice + free response, ranked by total; ties share a rank (1, 2, 2, 4).
+- Teams with nothing yet are listed without a rank, and the "missing" column says what is still needed.
+- The CSV has the same columns.
+
+**Errors** are always `{"detail": "...", "code": "..."}`. Every reply carries an `X-Request-ID` and basic security headers. CI runs `pip-audit` on the locked dependencies.
+
 ## 2026-11-21 — Reading sheets: method and thresholds (phase 4)
 
 **Method:** classic computer vision (OpenCV), no machine learning, so every decision can be explained and tested. The steps, in `backend/app/services/detection/`:

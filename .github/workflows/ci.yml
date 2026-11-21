@@ -36,6 +36,10 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
+      - name: Known-vulnerable dependencies (pip-audit)
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit==2.10.1 -r "$RUNNER_TEMP/requirements.txt" --require-hashes --disable-pip --progress-spinner off
       - name: Lint
         run: uv run ruff check . && uv run ruff format --check .
       - name: Type check

@@ -51,6 +51,8 @@ class ScoringMode(enum.StrEnum):
 
 
 class ScanStatus(enum.StrEnum):
+    processing = "processing"  # uploaded, being read in the background
+    failed = "failed"  # reading crashed (see Scan.error); can be retried
     needs_review = "needs_review"  # has flags a human must look at
     confirmed = "confirmed"  # reviewed / no flags, score final
     discarded = "discarded"  # duplicate not chosen, or bad photo
@@ -147,10 +149,15 @@ class Scan(Base):
     # Null when the team-number grid could not be read; set during review.
     team_number: Mapped[int | None] = mapped_column(Integer)
     sheet_version: Mapped[int] = mapped_column(Integer)
+    # Storage key of the original upload, never modified (a PDF is shared by its pages).
     image_path: Mapped[str] = mapped_column(Text)
-    # {"<q>": {"marked": ["A"], "fill": [0.1, ...], "flags": ["ambiguous"]}, ...}
+    page: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    warped_path: Mapped[str | None] = mapped_column(Text)  # straightened page image
+    error: Mapped[str | None] = mapped_column(Text)  # why reading failed
+    # Reader output: {"questions": {"<q>": {"marked", "fills", "confidence", "flags",
+    # "crop"}}, "team": {...}, "page_flags": [...], "event_code", "sheet_version", ...}
     detected_marks: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
-    # Human overrides from the review screen: {"<q>": ["B"], "team_number": 12}
+    # Human overrides from the review screen: {"marks": {"<q>": ["B"]}, "team_number": 12}
     corrections: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     flags: Mapped[list[str]] = mapped_column(JSONType, default=list)
     mcq_score: Mapped[Decimal | None] = mapped_column(Points)
