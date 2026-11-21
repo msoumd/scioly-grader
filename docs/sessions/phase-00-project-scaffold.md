@@ -1,6 +1,6 @@
 # Phase 0 — Project scaffold (done)
 
-**Status:** complete on branch `feat/project-scaffold`, awaiting review.
+**Status:** complete and merged into `main` (PR #1, 2026-11-21). CI green on `main`.
 
 ## Goal
 
@@ -31,4 +31,4 @@ A repository that every later phase can build on: tooling, database schema, vali
 
 ## Handoff to phase 1
 
-Merge `feat/project-scaffold` into `main` after review. CI first runs on that PR.
+Done: `feat/project-scaffold` merged into `main` via PR #1; CI passed on the PR and on `main`. Re-verified on 2026-11-21: 22 tests pass on SQLite and 33 on Postgres 16 (one RLS test runs on Postgres only). Phase 1 starts from `main` on branch `phase-01-event-import-and-scoring`.

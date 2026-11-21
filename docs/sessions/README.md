@@ -4,7 +4,7 @@ The project is built in sequential phases. Each phase is one working session tha
 
 | # | Phase | Starter-prompt step | Ends with |
 |---|-------|---------------------|-----------|
-| 0 | [Project scaffold](phase-00-project-scaffold.md) | — | Repo, schema, CI (**done**) |
+| 0 | [Project scaffold](phase-00-project-scaffold.md) | — | Repo, schema, CI (**done, merged**) |
 | 1 | [Event import and scoring](phase-01-event-import-and-scoring.md) | 1 | A&P spreadsheet imports; scoring function fully tested |
 | 2 | [Sheet layout and PDF generator](phase-02-sheet-layout-and-pdf.md) | 2a | Printable bubble page for any event |
 | 3 | [Fake-sheet test harness](phase-03-fake-sheet-harness.md) | 2b | Thousands of realistic fake filled sheets with known answers |
