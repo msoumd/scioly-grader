@@ -112,7 +112,11 @@ export class UploadQueue {
       state: this.items.some((i) => i.state === "paused") ? "paused" : "waiting",
       nextTryAt: 0,
     };
-    await this.store.put(item); // on the device first, so a crash can't lose it
+    try {
+      await this.store.put(item); // on the device first, so a crash can't lose it
+    } catch {
+      // Device storage refused (e.g. full, or a private window): still send it from memory.
+    }
     this.items.push(item);
     this.emit();
     void this.pump();
@@ -131,7 +135,7 @@ export class UploadQueue {
       if (i.state === "paused") {
         i.state = "waiting";
         i.nextTryAt = 0;
-        void this.store.put(i);
+        void this.store.put(i).catch(() => undefined);
       }
     }
     this.emit();
@@ -186,7 +190,7 @@ export class UploadQueue {
         this.emit();
       });
       this.items = this.items.filter((i) => i.id !== item.id);
-      await this.store.remove(item.id);
+      await this.store.remove(item.id).catch(() => undefined);
       this.emit();
       for (const fn of this.uploadedListeners) fn(item, result);
     } catch (err) {
@@ -203,13 +207,17 @@ export class UploadQueue {
       } else {
         item.state = "rejected";
       }
-      await Promise.all(this.items.map((i) => this.store.put(i)));
+      await Promise.all(this.items.map((i) => this.store.put(i).catch(() => undefined)));
       this.emit();
     }
   }
 }
 
-/** Keep queue items in IndexedDB (photos are stored as Blobs, which Safari supports). */
+/** Saved form: the photo as raw bytes. Safari refuses Blobs in IndexedDB in private
+ * windows (and some versions elsewhere); ArrayBuffers always work. */
+type Saved = Omit<QueueItem, "blob" | "progress"> & { bytes: ArrayBuffer; type: string };
+
+/** Keep queue items in IndexedDB. */
 export class IdbStore implements QueueStore {
   private db: Promise<IDBDatabase> | undefined;
 
@@ -239,13 +247,18 @@ export class IdbStore implements QueueStore {
     });
   }
 
-  all(): Promise<QueueItem[]> {
-    return this.run("readonly", (s) => s.getAll() as IDBRequest<QueueItem[]>);
+  async all(): Promise<QueueItem[]> {
+    const saved = await this.run("readonly", (s) => s.getAll() as IDBRequest<Saved[]>);
+    return saved.map(({ bytes, type, ...rest }) => ({
+      ...rest,
+      blob: new Blob([bytes], { type }),
+    }));
   }
 
   async put(item: QueueItem): Promise<void> {
-    const { progress: _progress, ...rest } = item; // progress is only for the screen
-    await this.run("readwrite", (s) => s.put(rest));
+    const { progress: _progress, blob, ...rest } = item; // progress is only for the screen
+    const saved: Saved = { ...rest, bytes: await blob.arrayBuffer(), type: blob.type };
+    await this.run("readwrite", (s) => s.put(saved));
   }
 
   async remove(id: string): Promise<void> {

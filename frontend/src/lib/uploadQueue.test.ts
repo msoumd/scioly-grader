@@ -127,6 +127,19 @@ describe("upload queue", () => {
     expect(q.snapshot()).toEqual([]);
   });
 
+  it("still sends a photo the device refused to store", async () => {
+    const store = new MemoryStore();
+    store.put = async () => {
+      throw new Error("QuotaExceededError");
+    };
+    const up = scripted(OK);
+    const q = new UploadQueue(store, up);
+    await q.add("AP", blob(), "a.jpg");
+    await flush();
+    expect(up.calls).toBe(1);
+    expect(q.snapshot()).toEqual([]);
+  });
+
   it("sends one at a time, oldest first", async () => {
     const order: string[] = [];
     const up: Uploader = async (item) => {
@@ -184,6 +197,8 @@ describe("IndexedDB store", () => {
     const [saved] = await store.all();
     expect(saved).toMatchObject({ id: "a", filename: "a.jpg", state: "waiting" });
     expect(saved!.progress).toBeUndefined();
+    expect(saved!.blob.type).toBe("image/jpeg");
+    expect(await saved!.blob.text()).toBe("jpeg");
     await store.remove("a");
     expect(await store.all()).toEqual([]);
   });
