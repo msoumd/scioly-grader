@@ -359,7 +359,8 @@ export interface paths {
         put?: never;
         /**
          * Confirm Scan
-         * @description A grader has checked this scan: it now counts for its team.
+         * @description A grader has checked this scan: it now counts for its team. A team number that is
+         *     not on the teams list needs ``accept_unknown_team``.
          */
         post: operations["confirm_scan_api_scans__scan_id__confirm_post"];
         delete?: never;
@@ -382,6 +383,47 @@ export interface paths {
          * @description Bad photo or unwanted duplicate: keep the image but never count it.
          */
         post: operations["discard_scan_api_scans__scan_id__discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scans/{scan_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Scan History
+         * @description Every change made to this scan, oldest first: who, when, old and new value.
+         */
+        get: operations["scan_history_api_scans__scan_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scans/{scan_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen Scan
+         * @description Supervisor re-opens a confirmed scan for correction (it stops counting until it is
+         *     confirmed again).
+         */
+        post: operations["reopen_scan_api_scans__scan_id__reopen_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -488,6 +530,15 @@ export interface components {
             /** File */
             file: string;
         };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /**
+             * Accept Unknown Team
+             * @description Count it even though the team number is not on the teams list
+             * @default false
+             */
+            accept_unknown_team: boolean;
+        };
         /** CorrectionIn */
         CorrectionIn: {
             /**
@@ -507,6 +558,14 @@ export interface components {
         CountedScanIn: {
             /** Scan Id */
             scan_id: number;
+        };
+        /** DiscardIn */
+        DiscardIn: {
+            /**
+             * Reason
+             * @description Why, for the record
+             */
+            reason?: string | null;
         };
         /** DuplicateOut */
         DuplicateOut: {
@@ -760,6 +819,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Discard Reason */
+            discard_reason?: string | null;
             /** Error */
             error: string | null;
             /** Event Code */
@@ -796,6 +857,8 @@ export interface components {
             team: {
                 [key: string]: unknown;
             };
+            /** Team Crop Url */
+            team_crop_url?: string | null;
             /** Team Number */
             team_number: number | null;
             /**
@@ -1471,7 +1534,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1494,6 +1561,72 @@ export interface operations {
         };
     };
     discard_scan_api_scans__scan_id__discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DiscardIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_history_api_scans__scan_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_scan_api_scans__scan_id__reopen_post: {
         parameters: {
             query?: never;
             header?: never;

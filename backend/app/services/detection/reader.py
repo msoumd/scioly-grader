@@ -30,7 +30,7 @@ from app.services.detection.page import (
     read_qr,
     warp_page,
 )
-from app.services.layout import Bubble, SheetLayout, build_layout
+from app.services.layout import Box, Bubble, SheetLayout, build_layout
 from app.services.scoring import score_sheet
 
 Image = npt.NDArray[np.uint8]
@@ -109,8 +109,17 @@ class SheetScan:
         row = next((r for r in self.layout.questions if r.q == q), None)
         if row is None:
             return None
+        return self._crop_box(row.box, pad)
+
+    def team_crop(self, pad: int = 6) -> Image | None:
+        """The team-number block (write-in boxes and digit bubbles), for the review screen."""
+        if self.warped is None or self.layout is None:
+            return None
+        return self._crop_box(self.layout.team_grid.box, pad)
+
+    def _crop_box(self, b: Box, pad: int) -> Image:
+        assert self.warped is not None and self.layout is not None
         s = self.warped.shape[1] / self.layout.page_w
-        b = row.box
         y0, y1 = max(0, int(b.y * s) - pad), int(b.bottom * s) + pad
         x0, x1 = max(0, int(b.x * s) - pad), int(b.right * s) + pad
         return self.warped[y0:y1, x0:x1]

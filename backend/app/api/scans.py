@@ -15,8 +15,11 @@ from app.api.deps import get_db, get_queue, get_settings_dep, get_storage
 from app.api.errors import ApiError, not_found
 from app.api.events import get_event
 from app.api.schemas import (
+    AuditOut,
+    ConfirmIn,
     CorrectionIn,
     CountedScanIn,
+    DiscardIn,
     DuplicateOut,
     QuestionReadOut,
     ScanCreated,
@@ -26,7 +29,7 @@ from app.api.schemas import (
 )
 from app.api.uploads import CONTENT_TYPES, read_limited, scan_kind
 from app.config import Settings
-from app.db.models import Event, Grader, Scan, ScanStatus, Team
+from app.db.models import AuditLog, Event, Grader, Scan, ScanStatus, Team
 from app.services import scans as rules
 from app.services.detection.loader import PDFIUM_LOCK
 from app.services.reading import ReadingQueue
@@ -99,6 +102,8 @@ def scan_out(db: Session, scan: Scan, storage: Storage) -> ScanOut:
             )
         )
     grader = db.get(Grader, scan.grader_id)
+    team = dict(detected.get("team", {}))
+    team_crop = team.pop("crop", None)  # a storage key: only its signed URL is sent
     return ScanOut(
         id=scan.id,
         event_code=event.code,
@@ -115,7 +120,9 @@ def scan_out(db: Session, scan: Scan, storage: Storage) -> ScanOut:
         original_url=storage.url(scan.image_path),
         warped_url=storage.url(scan.warped_path) if scan.warped_path else None,
         page_flags=detected.get("page_flags", []),
-        team=detected.get("team", {}),
+        team=team,
+        team_crop_url=storage.url(team_crop) if team_crop else None,
+        discard_reason=(scan.corrections or {}).get("discard_reason"),
         questions=questions,
     )
 
@@ -209,21 +216,71 @@ def correct_scan(
 
 
 @router.post("/scans/{scan_id}/confirm", response_model=ScanOut)
-def confirm_scan(scan_id: int, grader: GraderDep, db: Db, storage: StorageDep) -> ScanOut:
-    """A grader has checked this scan: it now counts for its team."""
+def confirm_scan(
+    scan_id: int,
+    grader: GraderDep,
+    db: Db,
+    storage: StorageDep,
+    body: ConfirmIn | None = None,
+) -> ScanOut:
+    """A grader has checked this scan: it now counts for its team. A team number that is
+    not on the teams list needs ``accept_unknown_team``."""
     scan = get_scan(db, scan_id)
-    rules.confirm(db, scan, grader.id, rules.team_numbers(db))
+    accept = body.accept_unknown_team if body else False
+    rules.confirm(db, scan, grader.id, rules.team_numbers(db), accept)
     db.commit()
     return scan_out(db, scan, storage)
 
 
 @router.post("/scans/{scan_id}/discard", response_model=ScanOut)
-def discard_scan(scan_id: int, grader: GraderDep, db: Db, storage: StorageDep) -> ScanOut:
+def discard_scan(
+    scan_id: int,
+    grader: GraderDep,
+    db: Db,
+    storage: StorageDep,
+    body: DiscardIn | None = None,
+) -> ScanOut:
     """Bad photo or unwanted duplicate: keep the image but never count it."""
     scan = get_scan(db, scan_id)
-    rules.discard(db, scan, grader.id)
+    reason = " ".join(body.reason.split()) if body and body.reason else None
+    rules.discard(db, scan, grader.id, reason)
     db.commit()
     return scan_out(db, scan, storage)
+
+
+@router.post("/scans/{scan_id}/reopen", response_model=ScanOut)
+def reopen_scan(scan_id: int, admin: AdminDep, db: Db, storage: StorageDep) -> ScanOut:
+    """Supervisor re-opens a confirmed scan for correction (it stops counting until it is
+    confirmed again)."""
+    scan = get_scan(db, scan_id)
+    rules.reopen(db, scan, admin.id)
+    db.commit()
+    return scan_out(db, scan, storage)
+
+
+@router.get("/scans/{scan_id}/history", response_model=list[AuditOut])
+def scan_history(scan_id: int, grader: GraderDep, db: Db) -> list[AuditOut]:
+    """Every change made to this scan, oldest first: who, when, old and new value."""
+    get_scan(db, scan_id)
+    rows = db.scalars(
+        select(AuditLog)
+        .where(AuditLog.entity == "scan", AuditLog.entity_id == scan_id)
+        .order_by(AuditLog.id)
+    ).all()
+    names = _grader_names(db, {a.grader_id for a in rows})
+    return [
+        AuditOut(
+            id=a.id,
+            entity=a.entity,
+            entity_id=a.entity_id,
+            field=a.field,
+            old_value=a.old_value,
+            new_value=a.new_value,
+            grader=names.get(a.grader_id, "?"),
+            created_at=a.created_at,
+        )
+        for a in rows
+    ]
 
 
 @router.get("/events/{code}/duplicates", response_model=list[DuplicateOut])

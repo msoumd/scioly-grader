@@ -3,6 +3,7 @@
 **Starter-prompt step:** 5, second half (review UI)
 **Branch:** `phase-07-review`
 **Depends on:** phase 6 merged
+**Status:** built on branch `phase-07-review`, awaiting review. Timing on a real phone is deferred to the end-of-build testing pass.
 
 ## Goal
 
@@ -49,12 +50,12 @@ A grader can quickly clear every flagged scan: see the flagged questions and the
 
 ## By the end of this phase
 
-- [ ] Every flag type from phase 4 has a clear way to resolve it on the phone
-- [ ] Confirmed corrections re-score and are audited
-- [ ] Duplicates can be resolved and only the chosen scan counts
-- [ ] Original photo always viewable
-- [ ] E2E tests for each review path; CI green
-- [ ] Screenshots attached to the summary
+- [x] Every flag type from phase 4 has a clear way to resolve it on the phone
+- [x] Confirmed corrections re-score and are audited
+- [x] Duplicates can be resolved and only the chosen scan counts
+- [x] Original photo always viewable
+- [x] E2E tests for each review path; CI green
+- [x] Screenshots attached to the summary
 
 ## Review checkpoint for Yuvan
 

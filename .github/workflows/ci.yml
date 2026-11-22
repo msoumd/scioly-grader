@@ -157,6 +157,13 @@ jobs:
         run: npm run build
       - name: Browser tests (Chromium + iPhone WebKit against the real backend)
         run: npx playwright test
+      - name: Upload review-screen screenshot (390 px, iPhone WebKit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-screenshots
+          path: frontend/e2e/__screenshots__/
+          if-no-files-found: ignore
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { api, errorMessage, type EventOut, type ScanStatus, type ScanSummary } from "../api/client";
 import { Camera } from "../components/Camera";
 import { queue } from "../lib/queue";
+import { href } from "../lib/route";
 import type { QueueItem } from "../lib/uploadQueue";
 
 const POLL_MS = 2000;
@@ -187,7 +188,13 @@ export function ScanScreen({ event, onAuthLost }: { event: EventOut; onAuthLost:
                   : ""}
               </span>
             </div>
-            <span className="row__score num">{s.mcq_score ?? ""}</span>
+            {s.status === "needs_review" ? (
+              <a className="btn btn--quiet btn--small" href={href({ tab: "review", scanId: s.id })}>
+                Review
+              </a>
+            ) : (
+              <span className="row__score num">{s.mcq_score ?? ""}</span>
+            )}
           </li>
         ))}
       </ul>

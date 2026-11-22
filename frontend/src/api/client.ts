@@ -10,6 +10,12 @@ export type EventOut = Schemas["EventOut"];
 export type ScanSummary = Schemas["ScanSummary"];
 export type ScanStatus = Schemas["ScanStatus"];
 export type UploadOut = Schemas["UploadOut"];
+export type ScanOut = Schemas["ScanOut"];
+export type QuestionRead = Schemas["QuestionReadOut"];
+export type EventDetail = Schemas["EventDetailOut"];
+export type TeamOut = Schemas["TeamOut"];
+export type DuplicateOut = Schemas["DuplicateOut"];
+export type AuditOut = Schemas["AuditOut"];
 
 /** Every failure, including "no connection" (status 0, code "network"). */
 export class ApiError extends Error {
@@ -39,6 +45,12 @@ const MESSAGES: Record<string, string> = {
   unsupported_type: "That file isn't a photo or PDF.",
   bad_page_count: "That PDF has too many pages (60 at most).",
   not_found: "Not found. It may have been removed.",
+  team_missing: "Type the team number before confirming.",
+  team_unknown: "That team number isn't on the teams list.",
+  duplicate_team: "This team already has a counted sheet. A supervisor picks which one counts.",
+  unreadable: "This page couldn't be read. Retake the photo.",
+  not_ready: "This sheet is still being read. Try again in a moment.",
+  discarded: "This sheet was discarded.",
 };
 
 /** A sentence to show a grader for any error. */
@@ -90,8 +102,31 @@ export const api = {
     request<Me>("/api/login", json("POST", { pin, grader_name: graderName })),
   logout: () => request<void>("/api/logout", { method: "POST" }),
   events: () => request<EventOut[]>("/api/events"),
-  scans: (eventCode: string) =>
-    request<ScanSummary[]>(`/api/events/${encodeURIComponent(eventCode)}/scans`),
+  scans: (eventCode: string, status?: ScanStatus) =>
+    request<ScanSummary[]>(
+      `/api/events/${encodeURIComponent(eventCode)}/scans${status ? `?status=${status}` : ""}`,
+    ),
+  event: (code: string) => request<EventDetail>(`/api/events/${encodeURIComponent(code)}`),
+  teams: () => request<TeamOut[]>("/api/teams"),
+  scan: (id: number) => request<ScanOut>(`/api/scans/${id}`),
+  correct: (id: number, body: { marks?: Record<number, string[]>; team_number?: number | null }) =>
+    request<ScanOut>(`/api/scans/${id}`, json("PATCH", body)),
+  confirm: (id: number, acceptUnknownTeam = false) =>
+    request<ScanOut>(
+      `/api/scans/${id}/confirm`,
+      json("POST", { accept_unknown_team: acceptUnknownTeam }),
+    ),
+  discard: (id: number, reason?: string) =>
+    request<ScanOut>(`/api/scans/${id}/discard`, json("POST", { reason: reason || null })),
+  reopen: (id: number) => request<ScanOut>(`/api/scans/${id}/reopen`, { method: "POST" }),
+  history: (id: number) => request<AuditOut[]>(`/api/scans/${id}/history`),
+  duplicates: (code: string) =>
+    request<DuplicateOut[]>(`/api/events/${encodeURIComponent(code)}/duplicates`),
+  chooseCounted: (code: string, team: number, scanId: number) =>
+    request<ScanOut>(
+      `/api/events/${encodeURIComponent(code)}/teams/${team}/counted-scan`,
+      json("POST", { scan_id: scanId }),
+    ),
 };
 
 /**
