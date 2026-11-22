@@ -3,6 +3,7 @@
 **Starter-prompt step:** 7 (deploy as a small hosted service with HTTPS)
 **Branch:** `phase-09-deploy`
 **Depends on:** phase 8 merged
+**Status:** everything that needs no account is built on branch `phase-09-deploy`. Creating the Supabase and Render accounts and going live waits for Yuvan (steps in `docs/DEPLOY.md`).
 
 ## Goal
 
@@ -42,11 +43,11 @@ The app runs on the internet over HTTPS with Supabase Postgres and Supabase Stor
 
 - [ ] App live at an HTTPS URL; camera works from iPhone Safari on that URL
 - [ ] Database and images in Supabase, RLS on, bucket private
-- [ ] Merges to `main` deploy automatically after green CI, followed by a passing smoke test
-- [ ] Backups run and a restore has been tested once
+- [ ] Merges to `main` deploy automatically after green CI, followed by a passing smoke test *(workflow built; needs the Render hook)*
+- [ ] Backups run and a restore has been tested once *(backup + restore tested locally; nightly job runs once secrets are set)*
 - [ ] Error monitoring and uptime check active
-- [ ] Load check results in the summary
-- [ ] Costs listed for Yuvan (monthly and for tournament week)
+- [x] Load check results in the summary
+- [x] Costs listed for Yuvan (monthly and for tournament week)
 
 ## Review checkpoint for Yuvan
 

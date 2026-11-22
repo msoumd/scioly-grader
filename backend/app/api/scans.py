@@ -7,6 +7,7 @@ import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -139,21 +140,37 @@ async def upload_scan(
 ) -> UploadOut:
     """Upload a photo, scan or multi-page PDF. Returns at once with one scan per page
     (status ``processing``); poll ``GET /api/scans/{id}`` for the result."""
-    event = get_event(db, event_code)
+    # Receive the whole file before touching the database, so a slow phone upload never
+    # holds a database connection; then do the blocking work (PDF page count, storage
+    # upload, inserts) in a worker thread so the server keeps answering other requests.
     data = await read_limited(file, settings.max_upload_mb)
+    return await run_in_threadpool(_store_upload, db, storage, queue, grader.id, event_code, data)
+
+
+def _store_upload(
+    db: Session,
+    storage: Storage,
+    queue: ReadingQueue,
+    grader_id: int,
+    event_code: str,
+    data: bytes,
+) -> UploadOut:
     ext = scan_kind(data)
     pages = _pdf_pages(data) if ext == ".pdf" else 1
     if pages < 1 or pages > MAX_PDF_PAGES:
         raise ApiError(422, "bad_page_count", f"PDF must have 1-{MAX_PDF_PAGES} pages")
+    event = get_event(db, event_code)
+    event_id, sheet_version = event.id, event.sheet_version
+    db.rollback()  # don't hold the connection while the photo goes to storage
     key = f"uploads/{secrets.token_hex(12)}/original{ext}"  # never the client's filename
     storage.put(key, data, CONTENT_TYPES[ext])
     created = [
         Scan(
-            event_id=event.id,
-            sheet_version=event.sheet_version,
+            event_id=event_id,
+            sheet_version=sheet_version,
             image_path=key,
             page=p,
-            grader_id=grader.id,
+            grader_id=grader_id,
             status=ScanStatus.processing,
             detected_marks={},
             corrections={},
@@ -163,11 +180,11 @@ async def upload_scan(
     ]
     db.add_all(created)
     db.commit()
+    out = UploadOut(scans=[ScanCreated(id=s.id, page=s.page, status=s.status) for s in created])
+    db.close()
     for scan in created:
         queue.submit(scan.id)
-    for scan in created:
-        db.refresh(scan)
-    return UploadOut(scans=[ScanCreated(id=s.id, page=s.page, status=s.status) for s in created])
+    return out
 
 
 @router.get("/scans/{scan_id}", response_model=ScanOut)

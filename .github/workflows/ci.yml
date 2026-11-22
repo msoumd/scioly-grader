@@ -174,6 +174,47 @@ jobs:
             frontend/test-results/
           if-no-files-found: ignore
 
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Build the production image
+        run: docker build -t scioly-grader:ci .
+      - name: Refuses to start in production with unsafe settings
+        run: |
+          if docker run --rm -e ENVIRONMENT=production scioly-grader:ci; then
+            echo "expected the container to refuse to start"; exit 1
+          fi
+      - name: Start it and run the smoke test
+        run: |
+          docker run -d --name app -p 8000:8000 \
+            -e DATABASE_URL=sqlite:////app/backend/data/app.db \
+            -e TOURNAMENT_PIN=ci-pin-2468 -e ADMIN_PIN=ci-admin-13579 \
+            -e SESSION_SECRET=ci-only-secret-0123456789abcdef0123456789 \
+            -e COOKIE_SECURE=false -e GIT_COMMIT=${{ github.sha }} \
+            scioly-grader:ci
+          cd backend
+          SMOKE_PIN=ci-pin-2468 uv run --no-dev python scripts/smoke.py \
+            http://localhost:8000 --commit ${{ github.sha }} --wait 90
+      - name: Load check (30 sheets uploaded at once; no errors, results within 60 s)
+        working-directory: backend
+        run: |
+          LOAD_ADMIN_PIN=ci-admin-13579 uv run --no-dev python scripts/load_check.py \
+            http://localhost:8000 --n 30 --setup --max-p95 60
+      - name: Container health check and user
+        run: |
+          for i in $(seq 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' app)" = healthy ] && break; sleep 3
+          done
+          docker inspect -f '{{.State.Health.Status}}' app | grep -qx healthy
+          [ "$(docker exec app id -u)" != 0 ]
+      - name: Container logs
+        if: always()
+        run: docker logs app || true
+
   secrets-scan:
     runs-on: ubuntu-latest
     steps:

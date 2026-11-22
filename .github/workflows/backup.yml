@@ -1,0 +1,64 @@
+name: Nightly backup
+
+# Encrypted dump of the production database, kept 14 days as a workflow artifact, and
+# restored into a scratch Postgres every night to prove the backup actually works.
+# Does nothing until these secrets are set (see docs/DEPLOY.md):
+#   BACKUP_DATABASE_URL  Supabase connection string, session pooler/direct (port 5432)
+#   BACKUP_PASSPHRASE    long random passphrase, also kept somewhere safe offline
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # 09:17 UTC daily (night in the US)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    environment: production
+    services:
+      scratch:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: scratch
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 10
+    env:
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Not set up yet?
+        id: ready
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::notice::backup secrets not set: skipping"; echo "go=false" >> "$GITHUB_OUTPUT"
+          else echo "go=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+      - name: Install pg_dump 17
+        if: steps.ready.outputs.go == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSo /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Dump and encrypt
+        if: steps.ready.outputs.go == 'true'
+        run: sh backend/scripts/backup.sh "scioly-$(date -u +%Y%m%d-%H%M).dump.gpg"
+      - name: Prove it restores
+        if: steps.ready.outputs.go == 'true'
+        env:
+          RESTORE_DATABASE_URL: postgresql://postgres:scratch@localhost:5432/postgres
+        run: |
+          sh backend/scripts/restore.sh scioly-*.dump.gpg
+          psql "$RESTORE_DATABASE_URL" -Atc "select 'events', count(*) from events union all select 'scans', count(*) from scans union all select 'free_response_scores', count(*) from free_response_scores union all select 'audit_log', count(*) from audit_log"
+      - uses: actions/upload-artifact@v4
+        if: steps.ready.outputs.go == 'true'
+        with:
+          name: database-backup
+          path: scioly-*.dump.gpg
+          retention-days: 14
+          if-no-files-found: error

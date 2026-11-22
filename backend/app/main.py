@@ -40,6 +40,14 @@ def create_app(
     storage: Storage | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
+    problems = settings.production_problems()
+    if problems:  # never start on the internet with laptop defaults
+        raise RuntimeError("Unsafe production settings:\n- " + "\n- ".join(problems))
+    if settings.sentry_dsn:
+        import sentry_sdk
+
+        sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment,
+                        send_default_pii=False, traces_sample_rate=0.0)  # fmt: skip
     engine = engine or make_engine(settings.database_url)
     storage = storage or make_storage(settings)
     sessions = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
@@ -57,17 +65,22 @@ def create_app(
 
     app = FastAPI(
         title="scioly-grader",
-        version="0.6.0",
+        version="0.9.0",
         description="Science Olympiad bubble-sheet grader. Log in with `POST /api/login` "
         "first; the session cookie is then sent automatically from this page.",
         lifespan=lifespan,
+        docs_url="/docs" if settings.docs_enabled else None,
+        redoc_url=None,
+        openapi_url="/openapi.json" if settings.docs_enabled else None,
     )
     app.state.settings = settings
     app.state.sessionmaker = sessions
     app.state.storage = storage
     app.state.reading_queue = ReadingQueue(sessions, storage, settings)
     app.state.login_limiter = auth.LoginLimiter(
-        settings.login_attempts_per_window, settings.login_window_seconds
+        settings.login_attempts_per_window,
+        settings.login_window_seconds,
+        settings.login_attempts_all_ips,
     )
 
     install_error_handlers(app)
@@ -90,6 +103,10 @@ def create_app(
         response.headers["X-Request-ID"] = rid
         for k, v in SECURITY_HEADERS.items():
             response.headers.setdefault(k, v)
+        if request.url.scheme == "https":  # behind the host's HTTPS proxy
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
         log.info(
             "%s %s %s %d %.0fms",
             rid,

@@ -61,11 +61,15 @@ class Me(BaseModel):
     role: Role
 
 
-class LoginLimiter:
-    """Failed attempts per IP in a sliding window (in memory: one web process)."""
+ALL = "*"  # key for wrong PINs from anywhere
 
-    def __init__(self, attempts: int, window_s: int) -> None:
-        self.attempts, self.window = attempts, window_s
+
+class LoginLimiter:
+    """Failed attempts per IP, and from everywhere together, in a sliding window (in
+    memory: one web process). The site-wide limit stops a guesser who keeps changing IP."""
+
+    def __init__(self, attempts: int, window_s: int, all_attempts: int = 100) -> None:
+        self.attempts, self.window, self.all_attempts = attempts, window_s, all_attempts
         self._failures: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
@@ -77,12 +81,33 @@ class LoginLimiter:
 
     def blocked(self, ip: str) -> bool:
         with self._lock:
-            return len(self._recent(ip, time.monotonic())) >= self.attempts
+            now = time.monotonic()
+            return (
+                len(self._recent(ip, now)) >= self.attempts
+                or len(self._recent(ALL, now)) >= self.all_attempts
+            )
 
     def fail(self, ip: str) -> None:
         with self._lock:
             now = time.monotonic()
             self._recent(ip, now).append(now)
+            self._recent(ALL, now).append(now)
+
+
+def client_ip(request: Request, proxy_hops: int) -> str:
+    """The caller's IP. Behind ``proxy_hops`` trusted proxies (the host's HTTPS front end)
+    it is the entry those proxies appended to X-Forwarded-For, counted from the right:
+    entries further left were written by the caller and can't be trusted."""
+    if proxy_hops > 0:
+        hops = [
+            h.strip()
+            for value in request.headers.getlist("x-forwarded-for")
+            for h in value.split(",")
+            if h.strip()
+        ]
+        if len(hops) >= proxy_hops:
+            return hops[-proxy_hops]
+    return request.client.host if request.client else "unknown"
 
 
 def _serializer(settings: Settings) -> URLSafeTimedSerializer:
@@ -125,7 +150,7 @@ def login(
     settings: Annotated[Settings, Depends(get_settings_dep)],
 ) -> Me:
     limiter: LoginLimiter = request.app.state.login_limiter
-    ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request, settings.trusted_proxy_hops)
     if limiter.blocked(ip):
         raise ApiError(429, "too_many_attempts", "Too many wrong PINs; wait a few minutes")
     if _same(body.pin, settings.admin_pin):

@@ -10,6 +10,8 @@ DEV_SECRET = "dev-only-insecure-session-secret-change-me"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # "production" refuses to start with development defaults (see production_problems).
+    environment: Literal["development", "production"] = "development"
     database_url: str = "sqlite:///./scioly.db"
 
     # --- login: graders type the shared PIN plus their name; the admin PIN unlocks
@@ -21,6 +23,9 @@ class Settings(BaseSettings):
     cookie_secure: bool = True  # cookies only over HTTPS (set false only for plain-http dev)
     login_attempts_per_window: int = 10
     login_window_seconds: int = 300
+    login_attempts_all_ips: int = 100  # wrong PINs from everywhere together per window
+    # HTTPS proxies in front of the app that append to X-Forwarded-For (Render: 1).
+    trusted_proxy_hops: int = 0
 
     # --- storage of uploaded images
     storage_backend: Literal["local", "supabase"] = "local"
@@ -37,10 +42,52 @@ class Settings(BaseSettings):
     stuck_after_seconds: int = 120  # scans still "processing" this long are retried
 
     # --- web
+    enable_docs: bool | None = None  # the /docs page; default: on in development only
+    sentry_dsn: str | None = None  # error reports (optional)
     cors_origins: list[str] = []
     # Built phone app to serve at "/": "" = the repo's frontend/dist if it was built,
     # "off" = API only.
     frontend_dist: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _driver(cls, v: str) -> str:
+        """Hosting providers hand out postgres:// URLs; SQLAlchemy needs the psycopg driver."""
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v.removeprefix(prefix)
+        return v
+
+    @property
+    def docs_enabled(self) -> bool:
+        return self.enable_docs if self.enable_docs is not None else not self.is_production
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    def production_problems(self) -> list[str]:
+        """Settings that are fine on a laptop but unsafe on the internet."""
+        if not self.is_production:
+            return []
+        problems = []
+        if self.session_secret == DEV_SECRET or len(self.session_secret) < 32:
+            problems.append("SESSION_SECRET must be a long random value (32+ characters)")
+        if self.tournament_pin in ("change-me", "") or len(self.tournament_pin) < 6:
+            problems.append("TOURNAMENT_PIN must be set (6+ characters)")
+        if not self.admin_pin or len(self.admin_pin) < 8:
+            problems.append("ADMIN_PIN must be set (8+ characters)")
+        if self.admin_pin and self.admin_pin == self.tournament_pin:
+            problems.append("ADMIN_PIN must differ from TOURNAMENT_PIN")
+        if not self.cookie_secure:
+            problems.append("COOKIE_SECURE must be true (HTTPS only)")
+        if self.database_url.startswith("sqlite"):
+            problems.append("DATABASE_URL must point at Postgres (SQLite is lost on redeploy)")
+        if self.storage_backend != "supabase":
+            problems.append("STORAGE_BACKEND must be supabase (local files are lost on redeploy)")
+        elif not (self.supabase_url and self.supabase_service_role_key):
+            problems.append("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
+        return problems
 
     @field_validator("cors_origins", mode="before")
     @classmethod

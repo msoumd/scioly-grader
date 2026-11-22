@@ -495,7 +495,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Liveness check for the host and uptime monitors. ``commit`` is the deployed git
+         *     commit (set by Render) so the deploy workflow can tell when a new version is live.
+         */
         get: operations["health_health_get"];
         put?: never;
         post?: never;

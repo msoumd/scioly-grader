@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -31,7 +32,12 @@ async def import_teams(
     """Upload ``team_number,team_name`` CSV. Saved only if every line is valid (and not
     ``dry_run``)."""
     data = await read_limited(file, settings.max_upload_mb)
-    report = parse_teams_csv(data, Path(file.filename or "teams.csv").name)
+    name = Path(file.filename or "teams.csv").name
+    return await run_in_threadpool(_import_teams, db, data, name, dry_run)
+
+
+def _import_teams(db: Session, data: bytes, name: str, dry_run: bool) -> TeamsImportOut:
+    report = parse_teams_csv(data, name)
     out = TeamsImportOut(
         ok=report.ok, errors=report.errors, warnings=report.warnings, text=report.to_text()
     )

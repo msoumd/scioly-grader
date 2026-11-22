@@ -1,0 +1,58 @@
+name: Deploy
+
+# After CI passes on main: ask Render to deploy that exact commit, wait until it is live,
+# then smoke-test the live site. Does nothing until the secrets below are set.
+#   secrets: RENDER_DEPLOY_HOOK (Render > service > Settings > Deploy Hook), SMOKE_PIN
+#   variables: APP_URL (e.g. https://scioly-grader.onrender.com)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - name: Not set up yet?
+        id: ready
+        run: |
+          if [ -z "$HOOK" ] || [ -z "$APP_URL" ]; then
+            echo "::notice::RENDER_DEPLOY_HOOK or APP_URL not set: skipping deploy (see docs/DEPLOY.md)"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+        with:
+          ref: ${{ env.SHA }}
+      - uses: astral-sh/setup-uv@v5
+        if: steps.ready.outputs.go == 'true'
+      - name: Trigger Render deploy of ${{ env.SHA }}
+        if: steps.ready.outputs.go == 'true'
+        run: curl -fsS -X POST "${HOOK}&ref=${SHA}" -o /dev/null
+      - name: Wait for it to go live, then smoke-test
+        if: steps.ready.outputs.go == 'true'
+        working-directory: backend
+        env:
+          SMOKE_PIN: ${{ secrets.SMOKE_PIN }}
+        run: uv run --no-dev python scripts/smoke.py "$APP_URL" --commit "$SHA" --wait 1200
