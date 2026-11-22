@@ -1,5 +1,5 @@
 /** Small per-device memory (grader name, chosen event). Never fails if storage is blocked. */
-const KEY = { name: "sg.graderName", event: "sg.event" } as const;
+const KEY = { name: "sg.graderName", event: "sg.event", fast: "sg.fastScores" } as const;
 
 function get(key: string): string | null {
   try {
@@ -23,4 +23,6 @@ export const prefs = {
   setGraderName: (v: string) => set(KEY.name, v),
   event: () => get(KEY.event),
   setEvent: (v: string | null) => set(KEY.event, v),
+  fastScores: () => get(KEY.fast) !== "off",
+  setFastScores: (on: boolean) => set(KEY.fast, on ? null : "off"),
 };

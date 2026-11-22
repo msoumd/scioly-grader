@@ -2,6 +2,37 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Free response, results and event setup (phase 8)
+
+**Totals only when complete.** A team's total and rank appear only once both the counted scan and the free-response score are in, as the spec says. Until then the row shows "—" and what is missing. This replaces phase 5's behaviour, where a missing part counted as 0 and the team was still ranked; that could make a half-entered team look like it was losing.
+
+**Ranks.** Total, highest first. Tied teams share a rank, shown as "T1, T1, 3". No tiebreakers (out of scope for v1).
+
+**Free-response entry (Scores tab).**
+- The team number and name are shown large. Values are typed on an on-screen keypad (whole or half points, up to the event's maximum) and checked before sending; the server checks again.
+- Changing a saved value needs a second tap ("Change team 7 from 12 to 13?") and is in the audit log.
+- After saving, the app goes to the next team without a score. This can be turned off, and the phone remembers the choice.
+- Each team's history (entered, then each change) is shown under it.
+
+**Results tab.**
+- The missing-items line ("3 with no scan, 11 with no free response, 1 waiting for review") filters the table when tapped. It refreshes every few seconds.
+- Tapping a row shows who entered each part and when, with links to the sheet (and its history) and to the free-response entry.
+- **Print** uses a print stylesheet: just the table, with the event, tournament and time printed.
+
+**CSV.**
+- Same rows and order as the table, plus who entered each part and when.
+- Times are in UTC (`2026-11-21T14:03:05Z`) so files from different laptops agree.
+- It starts with a UTF-8 byte-order mark so Excel shows accented team names correctly, and uses Windows line endings.
+- A golden-file test pins the exact bytes.
+
+**Event setup (admin PIN).**
+- Upload the event spreadsheet: the phase 1 report is shown first (a dry run), then **Import**.
+- Same for the teams CSV: new and renamed teams are counted before saving.
+- Each event links to its answer-sheet PDF.
+- **Re-score** first says how many sheets would change, and only then asks to go ahead.
+
+**Spec difference kept from phase 5:** the spec says the grader picks which duplicate scan counts. Here any grader can compare duplicates, but only a supervisor chooses.
+
 ## 2026-11-21 — Review screen (phase 7)
 
 **What a grader sees.**

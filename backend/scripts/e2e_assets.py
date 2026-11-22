@@ -117,6 +117,11 @@ def review_assets(setup, out: Path) -> None:  # type: ignore[no-untyped-def]
             setup, clean(6), {q: v for q, v in key.items() if q != 1}, team_digits(6, d)
         ),
     }
+    # Results tests: team 1 all right (60), team 3 only questions 1-10 right (10).
+    sheets["results_team1.jpg"] = _find(setup, clean(1), key, team_digits(1, d))
+    sheets["results_team3.jpg"] = _find(
+        setup, clean(3), {q: key[q] for q in range(1, 11)}, team_digits(3, d)
+    )
     for name, data in sheets.items():
         (out / name).write_bytes(data)
 

@@ -15,7 +15,7 @@ test("log in, pick the event, and the phone remembers both", async ({ page }) =>
   const event = page.getByRole("button", { name: /Event: .*Change event/ });
   await expect(event).toContainText("Robin Volunteer");
   await expect(page.getByRole("button", { name: "Scan" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("button", { name: "Scores" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Results" })).toBeEnabled();
 
   await page.reload(); // still logged in, same event, no picker
   await expect(event).toContainText("Robin Volunteer");

@@ -117,6 +117,8 @@ On the Scan screen, **Start camera** and hold the phone over a printed sheet. Th
 
 The **Review** tab (with a count badge) lists sheets that need a person, oldest first, with the reasons. Opening one shows the crop of each unclear answer with tap-to-fix bubbles, the team number (with a number pad if it couldn't be read), and the live score. Then **Confirm and count**, **Retake** or **Discard**. Teams with two sheets can be compared there, and a supervisor (admin PIN) picks the one that counts.
 
+The **Scores** tab is where graders type each team's free-response total. The **Results** tab shows the ranked table, what is still missing, **Download CSV** and **Print**. A supervisor can set up everything from the app under **Event setup** (on the event list, or on the Results tab): import the event spreadsheet and teams list, download answer sheets, and re-score after a key change. The command line is no longer needed.
+
 ## Read a sheet
 
 ```bash

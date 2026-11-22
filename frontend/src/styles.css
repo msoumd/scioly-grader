@@ -843,3 +843,200 @@ details > summary {
   font-weight: 600;
   max-width: 420px;
 }
+
+/* ---------- scores, results, setup ---------- */
+.entry__team {
+  font-size: 34px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+}
+.entry__name {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 2px 0 10px;
+}
+.entry__label {
+  display: block;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.entry__value {
+  width: 100%;
+  min-height: 64px;
+  margin: 6px 0 10px;
+  padding: 0 14px;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-control);
+  font-size: 36px;
+  font-weight: 700;
+  background: var(--paper);
+}
+.entry__value:focus {
+  outline: none;
+  border-color: var(--sheet-blue);
+}
+.confirm-box {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  background: #fff6e8;
+  border: 2px solid var(--review);
+}
+.confirm-box p {
+  margin: 0 0 10px;
+}
+.chip--button {
+  background: var(--paper);
+  cursor: pointer;
+  min-height: 36px;
+  font-size: 14px;
+}
+.chip--button[aria-pressed="true"] {
+  background: var(--review);
+  color: #fff;
+}
+.missing {
+  margin: 10px 0 12px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+}
+table.results {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  font-size: 16px;
+}
+.results th,
+.results td {
+  padding: 10px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: middle;
+}
+.results th {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.results th:first-child,
+.results td:first-child {
+  padding-left: 12px;
+}
+.results th:last-child,
+.results td:last-child {
+  padding-right: 12px;
+}
+.results .r {
+  text-align: right;
+}
+.results .rank {
+  font-weight: 700;
+  width: 3.2em;
+}
+.results .total {
+  font-weight: 700;
+}
+.results tbody tr {
+  cursor: pointer;
+}
+.results tr.is-open {
+  background: #eef4fa;
+}
+.results__team {
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  min-height: 32px;
+}
+.results tr.detail {
+  cursor: default;
+  background: #f7f9fb;
+}
+.results .detail dl {
+  margin: 0;
+  font-size: 15px;
+}
+.results .detail dt {
+  font-weight: 700;
+}
+.results .detail dd {
+  margin: 0 0 8px;
+}
+pre.report {
+  white-space: pre-wrap;
+  font-size: 13px;
+  background: var(--desk);
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 40vh;
+  overflow: auto;
+}
+.print-only {
+  display: none;
+}
+
+@media print {
+  :root {
+    background: #fff;
+  }
+  .topbar,
+  .tabbar,
+  .no-print,
+  .toast,
+  .back {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .shell {
+    display: block;
+  }
+  .content {
+    padding: 0;
+  }
+  table.results {
+    font-size: 11pt;
+    border-radius: 0;
+  }
+  .results tr {
+    break-inside: avoid;
+  }
+  .results tr.is-open {
+    background: none;
+  }
+}
+
+/* Free-response entry: keep the team, the value, the keypad and Save on one iPhone screen. */
+.btn {
+  text-decoration: none;
+}
+.entry {
+  padding: 12px 14px;
+}
+.entry__team {
+  font-size: 30px;
+}
+.entry__name {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.entry__value {
+  min-height: 52px;
+  font-size: 30px;
+  margin: 4px 0 8px;
+}
+.entry .keypad {
+  max-width: none;
+  gap: 6px;
+}
+.entry .keypad button {
+  min-height: 48px;
+}

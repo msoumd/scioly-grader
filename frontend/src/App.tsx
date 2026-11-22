@@ -9,6 +9,9 @@ import { Duplicates } from "./screens/Duplicates";
 import { ReviewQueue } from "./screens/ReviewQueue";
 import { ReviewScan } from "./screens/ReviewScan";
 import { ScanScreen } from "./screens/ScanScreen";
+import { Results } from "./screens/Results";
+import { ScoreEntry, ScoresList } from "./screens/Scores";
+import { Setup } from "./screens/Setup";
 import { ToastProvider } from "./components/Toast";
 import { go, useRoute, type Route } from "./lib/route";
 
@@ -17,8 +20,8 @@ type Auth = { state: "checking" } | { state: "out" } | { state: "in"; me: Me };
 const TABS = [
   { id: "scan", label: "Scan", icon: <ScanIcon />, ready: true },
   { id: "review", label: "Review", icon: <ReviewIcon />, ready: true },
-  { id: "scores", label: "Scores", icon: <ScoresIcon />, ready: false },
-  { id: "results", label: "Results", icon: <ResultsIcon />, ready: false },
+  { id: "scores", label: "Scores", icon: <ScoresIcon />, ready: true },
+  { id: "results", label: "Results", icon: <ResultsIcon />, ready: true },
 ] as const;
 
 /** How many sheets wait for review (for the tab badge), checked every few seconds. */
@@ -59,6 +62,7 @@ function Main() {
   const [auth, setAuth] = useState<Auth>({ state: "checking" });
   const [event, setEvent] = useState<EventOut | null>(null);
   const [picking, setPicking] = useState(() => !prefs.event());
+  const [eventsVersion, setEventsVersion] = useState(0);
 
   useEffect(() => {
     api
@@ -102,10 +106,15 @@ function Main() {
     setAuth({ state: "out" });
   };
 
+  if (route.tab === "setup") {
+    return <Setup me={auth.me} onEventsChanged={() => setEventsVersion((v) => v + 1)} />;
+  }
+
   if (picking || !event) {
     if (!picking) return null; // restoring the saved event
     return (
       <EventPicker
+        key={eventsVersion}
         me={auth.me}
         current={event?.code ?? prefs.event()}
         onAuthLost={authLost}
@@ -143,6 +152,13 @@ function Main() {
         {"scanId" in route && (
           <ReviewScan scanId={route.scanId} event={event} me={auth.me} onAuthLost={authLost} />
         )}
+        {route.tab === "scores" && !("team" in route) && (
+          <ScoresList event={event} onAuthLost={authLost} />
+        )}
+        {"team" in route && (
+          <ScoreEntry key={route.team} event={event} team={route.team} onAuthLost={authLost} />
+        )}
+        {route.tab === "results" && <Results event={event} me={auth.me} onAuthLost={authLost} />}
         {route.tab === "duplicates" && (
           <Duplicates event={event} me={auth.me} onAuthLost={authLost} />
         )}
@@ -157,8 +173,7 @@ function Main() {
             aria-current={t.id === tabOf(route) ? "page" : undefined}
             title={t.ready ? undefined : "Coming soon"}
             onClick={() => {
-              if (t.id === "scan") go({ tab: "scan" });
-              else if (t.id === "review") go({ tab: "review" });
+              go({ tab: t.id } as Route);
             }}
           >
             {t.icon}
