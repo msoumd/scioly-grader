@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -100,6 +101,10 @@ async def import_event(
         raise ApiError(415, "unsupported_type", "Upload the event setup as an .xlsx file")
     data = await read_limited(file, settings.max_upload_mb)
     name = Path(file.filename or "event_setup.xlsx").name
+    return await run_in_threadpool(_import_event, db, data, name, dry_run)
+
+
+def _import_event(db: Session, data: bytes, name: str, dry_run: bool) -> EventImportOut:
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "upload.xlsx"
         path.write_bytes(data)

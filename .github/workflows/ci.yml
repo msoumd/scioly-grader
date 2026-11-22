@@ -199,6 +199,11 @@ jobs:
           cd backend
           SMOKE_PIN=ci-pin-2468 uv run --no-dev python scripts/smoke.py \
             http://localhost:8000 --commit ${{ github.sha }} --wait 90
+      - name: Load check (30 sheets uploaded at once; no errors, results within 60 s)
+        working-directory: backend
+        run: |
+          LOAD_ADMIN_PIN=ci-admin-13579 uv run --no-dev python scripts/load_check.py \
+            http://localhost:8000 --n 30 --setup --max-p95 60
       - name: Container health check and user
         run: |
           for i in $(seq 30); do
