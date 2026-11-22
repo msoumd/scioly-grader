@@ -2,6 +2,7 @@
 
     uv run python scripts/e2e_assets.py ../frontend/e2e/.assets
     uv run python scripts/e2e_assets.py --pgm ../frontend/src/lib/__fixtures__/sheet_frame.pgm.gz
+    uv run python scripts/e2e_assets.py --scoring ../frontend/src/lib/__fixtures__/scoring.json
 
 All made from the example A&P event with fixed seeds, so every run gives the same files.
 Teams match ``seed_e2e.py`` (1-12).
@@ -12,6 +13,8 @@ from __future__ import annotations
 import argparse
 import gzip
 import io
+import json
+import random
 import sys
 from pathlib import Path
 
@@ -81,14 +84,54 @@ def pgm(path: Path) -> None:
     print(f"wrote {path} ({w}x{h})")
 
 
+def scoring_cases(path: Path) -> None:
+    """Random answers scored by the server's rules, so the app's live score is checked
+    against them. Uses the A&P key plus made-up partial-credit questions."""
+    from app.schemas.event_setup import LETTERS, QuestionSetup
+    from app.services.scoring import score_sheet
+
+    ap = _setup()
+    extra = [
+        QuestionSetup(q=101, points="3", options=5, correct="A,C,E", scoring="partial",
+                      penalty_per_wrong="0.5"),
+        QuestionSetup(q=102, points="1", options=4, correct="B,C,D", scoring="partial"),
+        QuestionSetup(q=103, points="2.5", options=6, correct="F", scoring="partial",
+                      penalty_per_wrong="0.25"),
+    ]  # fmt: skip
+    questions_setup = [*ap.questions, *extra]
+    rng = random.Random(42)
+    cases = []
+    for _ in range(40):
+        marks: dict[int, list[str]] = {}
+        for q in questions_setup:
+            r = rng.random()
+            if r < 0.15:
+                continue
+            letters = LETTERS[: q.options]
+            k = 1 if r < 0.7 else rng.randint(1, min(3, q.options))
+            marks[q.q] = sorted(rng.sample(letters, k)) if r >= 0.4 else list(q.correct)
+        cases.append({"marks": marks, "total": str(score_sheet(marks, questions_setup).total)})
+    questions = [
+        {"q": q.q, "points": str(q.points), "correct": list(q.correct),
+         "scoring": q.scoring.value, "penalty_per_wrong": str(q.penalty_per_wrong)}
+        for q in questions_setup
+    ]  # fmt: skip
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"questions": questions, "cases": cases}) + "\n")
+    print(f"wrote {path} ({len(cases)} cases)")
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("out", nargs="?", type=Path)
     p.add_argument("--pgm", type=Path)
+    p.add_argument("--scoring", type=Path)
     a = p.parse_args()
-    if not a.out and not a.pgm:
-        p.error("give an output folder and/or --pgm FILE")
+    if not (a.out or a.pgm or a.scoring):
+        p.error("give an output folder, --pgm FILE and/or --scoring FILE")
     if a.out:
         assets(a.out)
     if a.pgm:
         pgm(a.pgm)
+    if a.scoring:
+        scoring_cases(a.scoring)
