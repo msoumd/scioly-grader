@@ -111,6 +111,8 @@ class ScanOut(BaseModel):
     warped_url: str | None
     page_flags: list[str] = []
     team: dict[str, Any] = {}
+    team_crop_url: str | None = None
+    discard_reason: str | None = None
     questions: list[QuestionReadOut] = []
 
 
@@ -130,6 +132,17 @@ class CorrectionIn(BaseModel):
         default=None, description='Letters marked per question, e.g. {"12": ["B"]}; [] = blank'
     )
     team_number: int | None = Field(default=None, description="Set or fix the team number")
+
+
+class ConfirmIn(BaseModel):
+    accept_unknown_team: bool = Field(
+        default=False,
+        description="Count it even though the team number is not on the teams list",
+    )
+
+
+class DiscardIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=200, description="Why, for the record")
 
 
 class CountedScanIn(BaseModel):

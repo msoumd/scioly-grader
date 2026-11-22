@@ -112,6 +112,18 @@
     "title": "Body_upload_scan_api_scans_post",
     "type": "object"
    },
+   "ConfirmIn": {
+    "properties": {
+     "accept_unknown_team": {
+      "default": false,
+      "description": "Count it even though the team number is not on the teams list",
+      "title": "Accept Unknown Team",
+      "type": "boolean"
+     }
+    },
+    "title": "ConfirmIn",
+    "type": "object"
+   },
    "CorrectionIn": {
     "properties": {
      "marks": {
@@ -159,6 +171,25 @@
      "scan_id"
     ],
     "title": "CountedScanIn",
+    "type": "object"
+   },
+   "DiscardIn": {
+    "properties": {
+     "reason": {
+      "anyOf": [
+       {
+        "maxLength": 200,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Why, for the record",
+      "title": "Reason"
+     }
+    },
+    "title": "DiscardIn",
     "type": "object"
    },
    "DuplicateOut": {
@@ -898,6 +929,17 @@
       "title": "Created At",
       "type": "string"
      },
+     "discard_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Discard Reason"
+     },
      "error": {
       "anyOf": [
        {
@@ -975,6 +1017,17 @@
       "default": {},
       "title": "Team",
       "type": "object"
+     },
+     "team_crop_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Crop Url"
      },
      "team_number": {
       "anyOf": [
@@ -2070,7 +2123,7 @@
   },
   "/api/scans/{scan_id}/confirm": {
    "post": {
-    "description": "A grader has checked this scan: it now counts for its team.",
+    "description": "A grader has checked this scan: it now counts for its team. A team number that is\nnot on the teams list needs ``accept_unknown_team``.",
     "operationId": "confirm_scan_api_scans__scan_id__confirm_post",
     "parameters": [
      {
@@ -2083,6 +2136,23 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/ConfirmIn"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {
@@ -2126,6 +2196,23 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/DiscardIn"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
     "responses": {
      "200": {
       "content": {
@@ -2149,6 +2236,96 @@
      }
     },
     "summary": "Discard Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/scans/{scan_id}/history": {
+   "get": {
+    "description": "Every change made to this scan, oldest first: who, when, old and new value.",
+    "operationId": "scan_history_api_scans__scan_id__history_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AuditOut"
+         },
+         "title": "Response Scan History Api Scans  Scan Id  History Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Scan History",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/scans/{scan_id}/reopen": {
+   "post": {
+    "description": "Supervisor re-opens a confirmed scan for correction (it stops counting until it is\nconfirmed again).",
+    "operationId": "reopen_scan_api_scans__scan_id__reopen_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Reopen Scan",
     "tags": [
      "scans"
     ]

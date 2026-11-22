@@ -101,9 +101,10 @@ def _png(img: np.ndarray) -> bytes:
 # --- reading -------------------------------------------------------------------
 
 
-def _store_images(scan: Scan, result: SheetScan, storage: Storage) -> dict[int, str]:
-    """Straightened page and crops of the questions a human must look at."""
-    crops: dict[int, str] = {}
+def _store_images(scan: Scan, result: SheetScan, storage: Storage) -> dict[int | str, str]:
+    """Straightened page, the team-number block, and crops of the questions a human
+    must look at."""
+    crops: dict[int | str, str] = {}
     if result.warped is not None:
         key = f"scans/{scan.id}/warped.png"
         storage.put(key, _png(result.warped), "image/png")
@@ -114,6 +115,11 @@ def _store_images(scan: Scan, result: SheetScan, storage: Storage) -> dict[int, 
             key = f"scans/{scan.id}/crop_{q}.png"
             storage.put(key, _png(crop), "image/png")
             crops[q] = key
+    team = result.team_crop()
+    if team is not None and team.size:
+        key = f"scans/{scan.id}/crop_team.png"
+        storage.put(key, _png(team), "image/png")
+        crops["team"] = key
     return crops
 
 
@@ -138,6 +144,7 @@ def apply_read(
         "team": {
             "number": result.team_number,
             "flags": result.team_flags,
+            "crop": crops.get("team"),
             "digits": [
                 {"digit": d.digit, "fills": d.fills, "flags": d.flags} for d in result.digits
             ],
@@ -282,8 +289,17 @@ def correct(
     scan.mcq_score = new_score
 
 
-def confirm(db: Session, scan: Scan, grader_id: int, valid_teams: set[int]) -> None:
-    """A human has checked the scan: count it (unless another scan already counts)."""
+def confirm(
+    db: Session,
+    scan: Scan,
+    grader_id: int,
+    valid_teams: set[int],
+    accept_unknown_team: bool = False,
+) -> None:
+    """A human has checked the scan: count it (unless another scan already counts).
+
+    A team number missing from the teams list is refused unless the grader explicitly
+    accepts it (a team added late, or a list with a typo); that choice is audited."""
     _editable(scan)
     if scan.status == ScanStatus.discarded:
         raise ApiError(409, "discarded", "This scan was discarded")
@@ -292,7 +308,9 @@ def confirm(db: Session, scan: Scan, grader_id: int, valid_teams: set[int]) -> N
     if scan.team_number is None:
         raise ApiError(409, "team_missing", "Set the team number before confirming")
     if valid_teams and scan.team_number not in valid_teams:
-        raise ApiError(409, "team_unknown", f"Team {scan.team_number} is not on the teams list")
+        if not accept_unknown_team:
+            raise ApiError(409, "team_unknown", f"Team {scan.team_number} is not on the teams list")
+        audit(db, "scan", scan.id, "accepted_unknown_team", None, scan.team_number, grader_id)
     other = counted_scan(db, scan.event_id, scan.team_number)
     if other is not None and other.id != scan.id:
         raise ApiError(
@@ -308,12 +326,28 @@ def confirm(db: Session, scan: Scan, grader_id: int, valid_teams: set[int]) -> N
     db.flush()
 
 
-def discard(db: Session, scan: Scan, grader_id: int) -> None:
+def discard(db: Session, scan: Scan, grader_id: int, reason: str | None = None) -> None:
     if scan.status == ScanStatus.processing:
         raise ApiError(409, "not_ready", "Scan is still being read")
+    if reason:
+        scan.corrections = {**(scan.corrections or {}), "discard_reason": reason}
+        audit(db, "scan", scan.id, "discard_reason", None, reason, grader_id)
     audit(db, "scan", scan.id, "status", scan.status.value, "discarded", grader_id)
     audit(db, "scan", scan.id, "is_counted", scan.is_counted, False, grader_id)
     scan.status, scan.is_counted = ScanStatus.discarded, False
+
+
+def reopen(db: Session, scan: Scan, grader_id: int) -> None:
+    """Supervisor re-opens a confirmed scan for correction; it stops counting until it
+    is confirmed again."""
+    if scan.status != ScanStatus.confirmed:
+        raise ApiError(409, "not_confirmed", f"Scan is {scan.status.value}, not confirmed")
+    audit(db, "scan", scan.id, "status", "confirmed", "needs_review", grader_id)
+    audit(db, "scan", scan.id, "is_counted", scan.is_counted, False, grader_id)
+    scan.status, scan.is_counted = ScanStatus.needs_review, False
+    if "reopened" not in (scan.flags or []):
+        scan.flags = [*(scan.flags or []), "reopened"]
+    db.flush()
 
 
 def choose_counted(db: Session, event: Event, team_number: int, scan: Scan, grader_id: int) -> None:
