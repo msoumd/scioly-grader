@@ -3,6 +3,7 @@
 **Starter-prompt step:** 5, first half (capture UI)
 **Branch:** `phase-06-capture`
 **Depends on:** phase 5 merged
+**Status:** built on branch `phase-06-capture`, awaiting review. Real-iPhone checks are deferred to the end-of-build testing pass.
 
 ## Goal
 
@@ -59,12 +60,12 @@ An installable, mobile-first web app that a grader opens in iPhone Safari, logs 
 
 ## By the end of this phase
 
-- [ ] On a real iPhone in Safari: log in, pick A&P, point at a printed sheet, auto-capture fires, the scan appears as confirmed or needs-review
-- [ ] Photo and multi-page PDF upload work, including HEIC from the iPhone photo library
-- [ ] Uploads survive a Wi-Fi drop
-- [ ] App can be added to the home screen and opens full-screen
-- [ ] Playwright e2e suite covers login, upload, PDF, fake-camera capture and retry; CI green
-- [ ] Short screen recording or screenshots attached to the summary
+- [ ] On a real iPhone in Safari: log in, pick an event, point at a printed sheet, auto-capture fires, the scan appears as confirmed or needs-review *(deferred to end-of-build testing)*
+- [x] Photo and multi-page PDF upload work (e2e on Chromium and iPhone WebKit); HEIC from a real photo library *(deferred: real device)*
+- [x] Uploads survive a Wi-Fi drop (e2e offline test + unit tests)
+- [x] App has a manifest, icons and offline shell for Add to Home Screen *(opening full-screen on a real iPhone: deferred)*
+- [x] Playwright e2e suite covers login, upload, PDF, fake-camera capture and retry; CI green
+- [ ] Short screen recording or screenshots attached to the summary *(skipped by agreement: no previews until the app is complete)*
 
 ## Review checkpoint for Yuvan
 

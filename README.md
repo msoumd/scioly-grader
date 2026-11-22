@@ -20,9 +20,15 @@ backend/
     api/          HTTP routes: login, events, teams, scans, review, results (phase 5)
     services/detection/  reading photos: markers, QR, bubbles, flags (phase 4)
     harness/      fake filled sheets, phone-photo simulation, reader evaluation (phase 3)
+    web.py        serves the built phone app at "/"
     cli.py        command-line import, scoring and sheet tools
   migrations/     Alembic migrations — the only way the schema changes
+  scripts/        browser-test database and fixtures, OpenAPI export
   tests/
+frontend/         phone app (Vite + React + TypeScript, installable PWA) (phase 6)
+  src/api/        typed API client (types generated from the backend's OpenAPI)
+  src/lib/        corner-marker detection, steadiness check, offline upload queue
+  e2e/            Playwright browser tests
 event_setups/     example supervisor spreadsheets (the app works for any event)
 docs/
 ```
@@ -81,6 +87,34 @@ Open http://localhost:8000/docs, then on that page, in order:
 5. `POST /api/scans` with `event_code=AP` and the photo, then `GET /api/scans/{id}` for the result.
 6. `PUT /api/events/AP/teams/{n}/free-response`, then `GET /api/events/AP/results` (or `results.csv`).
 
+## Run the phone app
+
+Needs [Node.js](https://nodejs.org) 22 as well as uv.
+
+**One server, like production** (the API serves the built app at `/`):
+
+```bash
+cd frontend && npm ci && npm run build      # -> frontend/dist
+cd ../backend && uv run uvicorn app.main:app  # open http://localhost:8000
+```
+
+**While changing the app** (instant reload; Vite passes `/api` on to the backend):
+
+```bash
+cd backend && uv run uvicorn app.main:app --reload   # with COOKIE_SECURE=false in .env
+cd frontend && npm run dev                           # open http://localhost:5173
+```
+
+**On your iPhone.** Safari only allows the camera on an `https://` address, so a plain `http://192.168...` link shows "camera needs a secure link" (uploading photos still works). The easiest way is a temporary HTTPS tunnel to the one-server setup above, for example [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/):
+
+```bash
+cloudflared tunnel --url http://localhost:8000      # prints an https://....trycloudflare.com link
+```
+
+Open that link on the phone, log in, then use Safari's Share > Add to Home Screen to install it as an app. Anyone with the link can reach your laptop while the tunnel runs, so use a real PIN and stop the tunnel afterwards.
+
+On the Scan screen, **Start camera** and hold the phone over a printed sheet. The four corner targets turn green as each corner marker is found, and the picture is taken by itself once the sheet is steady. **Upload photos or PDF** accepts iPhone photos (including HEIC) and multi-page PDFs. Uploads are kept on the phone until the server has them, so a Wi-Fi drop only delays them.
+
 ## Read a sheet
 
 ```bash
@@ -111,6 +145,16 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy app
 uv run pytest
 ```
+
+Phone app:
+
+```bash
+cd frontend
+npm run lint && npm run typecheck && npm test
+npm run build && npm run e2e     # browser tests (first time: npx playwright install chromium webkit)
+```
+
+The browser tests start their own backend on a fresh SQLite database with the example event (`backend/scripts/seed_e2e.py`). They use fake sheet photos, a 3-page PDF and a fake camera video made by `backend/scripts/e2e_assets.py`. After changing the API, run `npm run api-types` so the app's types match (CI checks this).
 
 To also run the database tests against Postgres (CI does this):
 
