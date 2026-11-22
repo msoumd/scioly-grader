@@ -115,6 +115,8 @@ Open that link on the phone, log in, then use Safari's Share > Add to Home Scree
 
 On the Scan screen, **Start camera** and hold the phone over a printed sheet. The four corner targets turn green as each corner marker is found, and the picture is taken by itself once the sheet is steady. **Upload photos or PDF** accepts iPhone photos (including HEIC) and multi-page PDFs. Uploads are kept on the phone until the server has them, so a Wi-Fi drop only delays them.
 
+The **Review** tab (with a count badge) lists sheets that need a person, oldest first, with the reasons. Opening one shows the crop of each unclear answer with tap-to-fix bubbles, the team number (with a number pad if it couldn't be read), and the live score. Then **Confirm and count**, **Retake** or **Discard**. Teams with two sheets can be compared there, and a supervisor (admin PIN) picks the one that counts.
+
 ## Read a sheet
 
 ```bash

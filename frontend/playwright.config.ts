@@ -42,6 +42,8 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: { trace: "on-first-retry", screenshot: "only-on-failure" },
+  updateSnapshots: "missing", // a platform with no reference image yet records one
+  snapshotPathTemplate: "{testDir}/__screenshots__/{arg}-{projectName}-{platform}{ext}",
   webServer: [server("chromium", 8765), server("webkit", 8766)],
   projects: [
     {

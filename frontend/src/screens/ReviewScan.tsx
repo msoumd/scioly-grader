@@ -253,6 +253,64 @@ function Review({
     team.state !== "missing" &&
     (team.state !== "unknown" || acceptUnknown);
 
+  // A team number that was read cleanly is one compact line under the flagged questions;
+  // a problem with it (or "Change") shows the crop and keypad first.
+  const teamFirst = teamProblem || team.state !== "ok" || duplicate || editTeam;
+  const showCrop = teamFirst;
+  const teamPanel = readable ? (
+    <section
+      className={`panel${teamProblem || team.state !== "ok" ? " panel--flagged" : ""}`}
+      aria-label="Team number"
+    >
+      <h2>Team number</h2>
+      {showCrop && scan.team_crop_url && (
+        <img
+          className="crop crop--team"
+          src={scan.team_crop_url}
+          alt="Team number as written and bubbled"
+        />
+      )}
+      <div className="team-number num" aria-live="polite" aria-label="Team number typed">
+        {state.teamText}
+      </div>
+      {team.state === "ok" && team.name && <p className="ok-text">{team.name}</p>}
+      {team.state === "missing" && (
+        <p className="warn-text">Type the team number from the sheet.</p>
+      )}
+      {team.state === "unknown" && (
+        <>
+          <p className="warn-text">Team {team.number} isn't on the teams list.</p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={acceptUnknown}
+              onChange={(e) => setAcceptUnknown(e.target.checked)}
+            />
+            <span>Count it for team {team.number} anyway (the sheet clearly says this number)</span>
+          </label>
+        </>
+      )}
+      {duplicate && (
+        <p className="warn-text">
+          Team {scan.team_number} already has a counted sheet.{" "}
+          <a href={href({ tab: "duplicates" })}>Compare the sheets</a>
+        </p>
+      )}
+      {pending &&
+        (showPad ? (
+          <Keypad dispatch={dispatch} digits={digits} />
+        ) : (
+          <button
+            type="button"
+            className="btn btn--quiet btn--small"
+            onClick={() => setEditTeam(true)}
+          >
+            Change team number
+          </button>
+        ))}
+    </section>
+  ) : null;
+
   return (
     <>
       <a className="back" href={href({ tab: "review" })}>
@@ -317,61 +375,7 @@ function Review({
         </section>
       )}
 
-      {readable && (
-        <section
-          className={`panel${teamProblem || team.state !== "ok" ? " panel--flagged" : ""}`}
-          aria-label="Team number"
-        >
-          <h2>Team number</h2>
-          {scan.team_crop_url && (
-            <img
-              className="crop crop--team"
-              src={scan.team_crop_url}
-              alt="Team number as written and bubbled"
-            />
-          )}
-          <div className="team-number num" aria-live="polite" aria-label="Team number typed">
-            {state.teamText}
-          </div>
-          {team.state === "ok" && team.name && <p className="ok-text">{team.name}</p>}
-          {team.state === "missing" && (
-            <p className="warn-text">Type the team number from the sheet.</p>
-          )}
-          {team.state === "unknown" && (
-            <>
-              <p className="warn-text">Team {team.number} isn't on the teams list.</p>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={acceptUnknown}
-                  onChange={(e) => setAcceptUnknown(e.target.checked)}
-                />
-                <span>
-                  Count it for team {team.number} anyway (the sheet clearly says this number)
-                </span>
-              </label>
-            </>
-          )}
-          {duplicate && (
-            <p className="warn-text">
-              Team {scan.team_number} already has a counted sheet.{" "}
-              <a href={href({ tab: "duplicates" })}>Compare the sheets</a>
-            </p>
-          )}
-          {pending &&
-            (showPad ? (
-              <Keypad dispatch={dispatch} digits={digits} />
-            ) : (
-              <button
-                type="button"
-                className="btn btn--quiet btn--small"
-                onClick={() => setEditTeam(true)}
-              >
-                Change team number
-              </button>
-            ))}
-        </section>
-      )}
+      {teamFirst && teamPanel}
 
       {flagged.map((q) => (
         <section key={q.q} className="panel panel--flagged" aria-label={`Question ${q.q}`}>
@@ -395,6 +399,8 @@ function Review({
           )}
         </section>
       ))}
+
+      {!teamFirst && teamPanel}
 
       {readable && others.length > 0 && (
         <details className="panel">

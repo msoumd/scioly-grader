@@ -2,6 +2,30 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Review screen (phase 7)
+
+**What a grader sees.**
+- Problems with the team number come first, with a crop of the team-number block and a number pad. A team number that was read cleanly is one line, with a Change button, below the flagged questions.
+- Each flagged question shows the crop of its row, what the reader saw in plain words, and tap-to-toggle answer bubbles. The letters the reader detected are ringed.
+- The other answers are folded away for a spot check.
+- The live score uses the same rules as the server, with exact fractions, and is checked against 40 server-scored sheets. The server still re-scores on save, and its score is the one that counts.
+- On a phone the flagged question, the score and **Confirm and count** fit on the first screen.
+
+**Rules added on the server.**
+- **Unknown team numbers** (not on the teams list) count only after the grader ticks "count it anyway". The acknowledgement is in the audit log.
+- **Discard** takes an optional reason. **Retake** is a discard with reason "retake" that goes back to the camera.
+- **Re-open** (supervisor only) turns a counted sheet back into a review item. It stops counting until confirmed again, and is audited.
+- **History:** any logged-in grader can see a sheet's history (who changed what, when). The full audit log stays supervisor-only.
+- **Team-number crop:** the reader saves a crop of the team-number block for every readable sheet.
+
+**Duplicates.** Anyone can compare a team's sheets side by side: score, who scanned it, when, and the questions where the answers differ. Only a supervisor can choose which one counts, as decided in phase 5; the others are discarded but kept.
+
+**Speed.** The next sheet in the queue (its data and crops) is loaded in the background, so after Confirm the next one opens at once.
+
+**Addresses.** Screens have their own addresses (`#/review/12`), so the phone's Back button works.
+
+**Screenshot check.** The review screen at 390 px is compared with a stored image per platform, since fonts differ between macOS and Linux. On CI it is recorded and attached to the run as `review-screenshots`.
+
 ## 2026-11-21 — Phone app and camera capture (phase 6)
 
 **Stack.**
