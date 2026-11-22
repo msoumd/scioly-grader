@@ -8,6 +8,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,7 @@ from app.config import DEV_SECRET, Settings, get_settings
 from app.db.session import make_engine
 from app.services.reading import ReadingQueue
 from app.services.storage import Storage, make_storage
+from app.web import default_dist, mount_frontend
 
 log = logging.getLogger("scioly")
 
@@ -55,7 +57,7 @@ def create_app(
 
     app = FastAPI(
         title="scioly-grader",
-        version="0.5.0",
+        version="0.6.0",
         description="Science Olympiad bubble-sheet grader. Log in with `POST /api/login` "
         "first; the session cookie is then sent automatically from this page.",
         lifespan=lifespan,
@@ -101,6 +103,10 @@ def create_app(
     app.include_router(health_router)
     for module in (auth, events, teams, scans, results, files):
         app.include_router(module.router)
+    if settings.frontend_dist != "off":  # last: its catch-all must not shadow the API
+        dist = Path(settings.frontend_dist) if settings.frontend_dist else default_dist()
+        if not mount_frontend(app, dist):
+            log.info("no phone app build at %s; serving the API only", dist)
     return app
 
 

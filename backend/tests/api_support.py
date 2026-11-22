@@ -11,13 +11,10 @@ import numpy as np
 from fastapi.testclient import TestClient
 
 from app.config import Settings
-from app.harness.augment import photograph
-from app.harness.painter import paint_sheet
-from app.harness.truth import FillStyle, SheetTruth, bubble_key, team_key
+from app.harness.samples import sheet_photo
+from app.harness.truth import FillStyle
 from app.schemas.event_setup import EventSetup
 from app.services.event_import import import_event_workbook
-from app.services.layout import build_layout
-from app.services.sheet_pdf import render_sheet_image
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "event_setups"
 AP_FILE = EXAMPLES / "PUSO_2026_AP_event_setup.xlsx"
@@ -33,6 +30,7 @@ def settings_for(tmp: Path, **overrides: Any) -> Settings:
         "reader_sync": True,
         "upload_dir": str(tmp / "uploads"),
         "cookie_secure": True,
+        "frontend_dist": "off",
     }
     values.update(overrides)
     return Settings(**values)
@@ -52,13 +50,6 @@ def ap_setup() -> EventSetup:
     return setup
 
 
-@cache
-def _page(setup_key: str) -> tuple[Any, np.ndarray]:
-    setup = ap_setup()
-    layout = build_layout(setup)
-    return layout, render_sheet_image(layout, 200)
-
-
 def sheet_jpeg(
     marks: dict[int, list[str]],
     team: list[list[int]],
@@ -68,23 +59,7 @@ def sheet_jpeg(
     styles: dict[str, FillStyle] | None = None,
 ) -> bytes:
     """A fake phone photo of an A&P sheet with exactly these marks and team digits."""
-    setup = ap_setup()
-    layout, page = _page("AP")
-    fill = {bubble_key(q, x): FillStyle.solid for q, v in marks.items() for x in v}
-    fill |= {team_key(c, d): FillStyle.solid for c, ds in enumerate(team) for d in ds}
-    fill |= styles or {}
-    truth = SheetTruth(
-        sample_id="t",
-        event_code="AP",
-        sheet_version=1,
-        layout_version=1,
-        marks={q.q: marks.get(q.q, []) for q in setup.questions},
-        team_marks=team,
-        fill_styles=fill,
-    )
-    rng = np.random.default_rng(seed)
-    painted = paint_sheet(page, layout, truth, 200, rng)
-    return photograph(painted, condition, rng).jpeg
+    return sheet_photo(ap_setup(), marks, team, seed=seed, condition=condition, styles=styles)
 
 
 def all_correct() -> dict[int, list[str]]:
