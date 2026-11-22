@@ -1,6 +1,6 @@
 """Write the API's OpenAPI schema (the phone app's typed client is generated from it).
 
-    uv run python scripts/export_openapi.py ../frontend/openapi.json
+uv run python scripts/export_openapi.py ../frontend/openapi.json
 """
 
 from __future__ import annotations

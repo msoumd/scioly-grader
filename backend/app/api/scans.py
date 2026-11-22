@@ -28,6 +28,7 @@ from app.api.uploads import CONTENT_TYPES, read_limited, scan_kind
 from app.config import Settings
 from app.db.models import Event, Grader, Scan, ScanStatus, Team
 from app.services import scans as rules
+from app.services.detection.loader import PDFIUM_LOCK
 from app.services.reading import ReadingQueue
 from app.services.storage import Storage
 
@@ -41,14 +42,15 @@ StorageDep = Annotated[Storage, Depends(get_storage)]
 def _pdf_pages(data: bytes) -> int:
     import pypdfium2 as pdfium
 
-    try:
-        doc = pdfium.PdfDocument(data)
-    except Exception as exc:
-        raise ApiError(415, "unreadable_pdf", "That PDF could not be opened") from exc
-    try:
-        return len(doc)
-    finally:
-        doc.close()
+    with PDFIUM_LOCK:  # PDFium is not thread-safe
+        try:
+            doc = pdfium.PdfDocument(data)
+        except Exception as exc:
+            raise ApiError(415, "unreadable_pdf", "That PDF could not be opened") from exc
+        try:
+            return len(doc)
+        finally:
+            doc.close()
 
 
 def get_scan(db: Session, scan_id: int) -> Scan:
