@@ -1,0 +1,8 @@
+dist
+src/vendor
+src/api/schema.d.ts
+openapi.json
+playwright-report
+test-results
+e2e/.assets
+package-lock.json
