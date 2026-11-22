@@ -4,24 +4,31 @@ The app runs as one container on **Render** (it serves the phone app and the API
 
 Nothing here costs money until you choose a paid plan. **Do the steps in order**; each takes a few minutes.
 
-## Costs
+## Costs (budget: $35)
 
 Prices checked November 2026; confirm on [render.com/pricing](https://render.com/pricing) and [supabase.com/pricing](https://supabase.com/pricing) before paying.
 
 | What | Plan | Per month | Why |
 |---|---|---|---|
-| Render web service | **Standard** (1 CPU, 2 GB) | **$25** | Reading photos needs about 300 MB at rest and more during bursts. The $7 Starter plan (512 MB) is too small, and the free plan sleeps when idle. |
-| Supabase | **Pro** | **$25** | About 1,300 sheets × 1.5–4 MB of photos is 2–5 GB, over the free plan's 1 GB. Pro also has daily backups and never pauses (free projects pause after a week unused). |
+| Supabase | **Free** | **$0** | Photos are deleted once a sheet is counted or discarded, so storage only ever holds the few sheets waiting for review: far under the free 1 GB. Scores take about 10 KB per sheet, roughly 15 MB for a whole tournament, against the free 500 MB database. |
+| Render, while setting up and testing | **Starter** (0.5 CPU, 512 MB) | $7 | Works: 1 s per sheet, about 33 sheets a minute, and memory peaked at 75% in a 30-sheet burst. Too tight to trust on the day. |
+| Render, tournament week | **Standard** (1 CPU, 2 GB) | $25 | 0.5 s per sheet, about 110 a minute, memory under 300 MB. Render bills by the second, so one week of Standard is about $6. |
 | GitHub Actions, Sentry, UptimeRobot | free tiers | $0 | |
-| **Tournament month** | | **≈ $50** | Billed by the day on Render, so a week costs about a quarter of that. |
-| **Between tournaments** | | **$0–25** | Suspend the Render service ($0). Keep Supabase Pro only if you want to keep the photos. |
+| **A tournament month** | | **about $7–25** | Starter all month plus Standard for the week; under $15 in practice. |
+| **Between tournaments** | | **$0** | Suspend the Render service. Supabase free costs nothing. |
 
-Measured on a 1-CPU, 2 GB container (the Standard plan's size):
-- one sheet is read in **0.5 s**;
-- five at once come back within **2.6 s**;
-- 60 uploaded at the same moment are all read within **33 s** (about **110 sheets a minute**);
-- memory peaked under **300 MB**;
-- a tournament of ~1,300 sheets over a day is far below this.
+**Two things about Supabase's free plan:**
+- **It pauses a project after a week with no activity.** The nightly backup (step 3) reads the database every day, which should keep it awake. Still, open the Supabase dashboard a few days before the tournament: if it says *Paused*, press **Restore**, which takes a few minutes.
+- **It has no daily backups of its own.** The nightly encrypted backup in step 3 covers the scores.
+
+**Photos are not kept.** A sheet's photo, straightened page and crops are deleted as soon as it is counted or discarded. The answers, score, corrections and history stay. After that, the paper sheet is the record: scan it again if anyone disputes it. (To keep photos instead, set `DELETE_PHOTOS_WHEN_DONE=false`, which needs more storage.)
+
+Measured on containers the size of each Render plan:
+
+| | 1 sheet | 5 at once | Burst of 30–60 | Peak memory |
+|---|---|---|---|---|
+| Standard (1 CPU, 2 GB) | 0.5 s | within 2.6 s | 60 all done in 33 s | under 300 MB |
+| Starter (0.5 CPU, 512 MB) | 1 s | within 7 s | 30 all done in 55 s | 384 MB of 512 |
 
 ## 1. Supabase (database and photos)
 
@@ -29,7 +36,7 @@ Measured on a 1-CPU, 2 GB container (the Standard plan's size):
    - Name: `scioly-grader`.
    - Region: the one closest to the tournament (e.g. *West US (Oregon)*, to sit next to Render's Oregon region).
    - Make a strong database password and save it in your password manager.
-2. **Storage → New bucket**: name `scans`, **Public bucket: off**. It must stay private; the app hands out 10-minute links.
+2. **Storage → New bucket**: name `scans`, **Public bucket: off**. It must stay private; the app hands out 10-minute links. Only photos of sheets waiting for review sit here.
 3. **Project Settings → Data API**: copy the **Project URL**. That is `SUPABASE_URL`.
 4. **Project Settings → API Keys**: copy the **service_role** key. That is `SUPABASE_SERVICE_ROLE_KEY`.
    - It can read and write everything, so it only ever goes into Render's secret settings.
@@ -37,7 +44,7 @@ Measured on a 1-CPU, 2 GB container (the Standard plan's size):
 5. **Connect** (top of the dashboard) → **Connection string**. Copy two of them, replacing `[YOUR-PASSWORD]`:
    - **Transaction pooler** (port 6543) is `DATABASE_URL`, for the app.
    - **Session pooler** (port 5432) is `BACKUP_DATABASE_URL`, for nightly backups.
-6. Upgrade to **Pro** before the tournament month (Settings → Billing).
+6. Stay on the **Free** plan.
 
 The app creates its own tables on first start. Every table has row-level security on with no policies, so Supabase's public REST API can see nothing; a test checks this.
 
@@ -56,6 +63,7 @@ The app creates its own tables on first start. Every table has row-level securit
    | `SENTRY_DSN` | optional (step 5) |
 
    `SESSION_SECRET` is generated by Render. **The app refuses to start** if any of these is missing, a PIN is too short, or photos would be stored on the server's own disk (lost on every deploy). The logs say exactly which one.
+   The blueprint starts on **Starter** ($7/month, billed by the second).
 3. **Apply.** The first build takes about 5 minutes. Open the `https://….onrender.com` address it shows, then log in with the admin PIN and a name.
 4. **Settings → Deploy Hook**: copy the URL for step 3.
 
@@ -75,7 +83,7 @@ From then on:
 - **Deploy** (`.github/workflows/deploy.yml`) runs after the tests pass on `main`. It deploys that exact commit, waits for it to be live, and runs a smoke test: health, the app page, HTTPS headers, login, and the events list.
 - **Nightly backup** (`.github/workflows/backup.yml`) makes an encrypted copy of the database, kept 14 days. Each night it also restores the copy into a scratch database to prove the backup works. Run it once by hand from the Actions tab after setting up.
 
-Photos are not in the nightly copy, and Supabase's daily backups cover the database, not stored files. The photos stay in the private bucket. If one were lost, the score is already saved, and the paper sheet can be scanned again.
+Photos are not in the nightly copy; photos only exist while a sheet waits for review. If one were lost, the paper sheet can simply be scanned again.
 
 ## 4. Check on deploy day
 
@@ -105,7 +113,8 @@ This was tested: a backup encrypted, refused a wrong passphrase, and restored tw
 
 ## Tournament week
 
-- Keep the Render service on **Standard** (not free or Starter).
+- A day or two before: Render → service → **Settings → Instance type → Standard**. Afterwards, switch back to Starter or suspend the service.
+- Open the Supabase dashboard and make sure the project isn't paused.
 - Avoid merging to `main` during the tournament: each merge redeploys, a short blip. The phone upload queue rides it out, but there's no need.
 - A phone hotspot is the backup if the venue Wi-Fi fails; uploads wait on the phone until they get through.
 - Afterwards: download the results CSVs, then suspend the Render service.

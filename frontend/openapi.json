@@ -1030,8 +1030,15 @@
       "title": "Mcq Score"
      },
      "original_url": {
-      "title": "Original Url",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Original Url"
      },
      "page": {
       "title": "Page",
@@ -1044,6 +1051,11 @@
       },
       "title": "Page Flags",
       "type": "array"
+     },
+     "photos_deleted": {
+      "default": false,
+      "title": "Photos Deleted",
+      "type": "boolean"
      },
      "questions": {
       "default": [],

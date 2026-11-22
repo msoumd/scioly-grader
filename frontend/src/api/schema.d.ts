@@ -874,7 +874,7 @@ export interface components {
             /** Mcq Score */
             mcq_score: string | null;
             /** Original Url */
-            original_url: string;
+            original_url: string | null;
             /** Page */
             page: number;
             /**
@@ -882,6 +882,11 @@ export interface components {
              * @default []
              */
             page_flags: string[];
+            /**
+             * Photos Deleted
+             * @default false
+             */
+            photos_deleted: boolean;
             /**
              * Questions
              * @default []

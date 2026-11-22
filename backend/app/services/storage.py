@@ -31,6 +31,10 @@ class Storage(Protocol):
 
     def get(self, key: str) -> bytes: ...
 
+    def delete(self, keys: list[str]) -> None:
+        """Remove these files; missing ones are fine."""
+        ...
+
     def url(self, key: str) -> str:
         """A URL the logged-in app can load the file from."""
         ...
@@ -60,6 +64,19 @@ class LocalStorage:
         if not path.is_file():
             raise StorageError(f"no stored file {key!r}")
         return path.read_bytes()
+
+    def delete(self, keys: list[str]) -> None:
+        for key in keys:
+            path = self._path(key)
+            path.unlink(missing_ok=True)
+            for parent in path.parents:  # tidy empty folders up to the root
+                if parent == self.root:
+                    break
+                if not parent.exists():
+                    continue
+                if any(parent.iterdir()):
+                    break
+                parent.rmdir()
 
     def url(self, key: str) -> str:
         return f"/api/files/{check_key(key)}"
@@ -101,6 +118,17 @@ class SupabaseStorage:
             f"{self.base}/object/{self.bucket}/{check_key(key)}", headers=self.headers
         )
         return self._check(r, "download").content
+
+    def delete(self, keys: list[str]) -> None:
+        if not keys:
+            return
+        r = self.client.request(
+            "DELETE",
+            f"{self.base}/object/{self.bucket}",
+            json={"prefixes": [check_key(k) for k in keys]},
+            headers=self.headers,
+        )
+        self._check(r, "delete")
 
     def url(self, key: str) -> str:
         r = self.client.post(

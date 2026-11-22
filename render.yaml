@@ -5,9 +5,10 @@ services:
     name: scioly-grader
     runtime: docker
     dockerfilePath: ./Dockerfile
-    # OpenCV reading needs ~1 GB of RAM: "standard" (2 GB). Drop to "starter" only
-    # between tournaments if memory allows; never "free" (it sleeps when idle).
-    plan: standard
+    # "starter" ($7, 0.5 CPU, 512 MB) works for setup and testing. Switch to "standard"
+    # ($25, 1 CPU, 2 GB) for tournament week in the dashboard (docs/DEPLOY.md). Never
+    # "free": it sleeps when idle.
+    plan: starter
     region: oregon
     healthCheckPath: /health
     # Deploys are triggered by .github/workflows/deploy.yml after CI passes on main.

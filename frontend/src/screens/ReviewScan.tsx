@@ -357,16 +357,25 @@ function Review({
             Show whole page
           </button>
         )}
-        <button
-          type="button"
-          className="btn btn--quiet btn--small"
-          onClick={() =>
-            setViewer({ src: scan.original_url, alt: `Original photo, sheet #${scan.id}` })
-          }
-        >
-          Show original photo
-        </button>
+        {scan.original_url && (
+          <button
+            type="button"
+            className="btn btn--quiet btn--small"
+            onClick={() =>
+              setViewer({ src: scan.original_url!, alt: `Original photo, sheet #${scan.id}` })
+            }
+          >
+            Show original photo
+          </button>
+        )}
       </div>
+      {scan.photos_deleted && (
+        <p className="hint" style={{ marginTop: -6 }}>
+          This sheet's photos were deleted once it was{" "}
+          {scan.status === "discarded" ? "discarded" : "counted"}. The answers and score are kept;
+          check the paper sheet if you need to look again.
+        </p>
+      )}
 
       {!readable && pending && (
         <section className="panel panel--flagged">
