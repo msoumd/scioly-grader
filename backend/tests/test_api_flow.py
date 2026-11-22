@@ -7,7 +7,8 @@ Teams and what they bubbled (A&P key; questions 11 and 14 are worth 2 points):
   team 4: q11 = D and q14 = B (both right)        ->  4
   team 5: q1 = D right, forgot the team digits    ->  1 after a grader sets team 5
 Free response (out of 140): 1 -> 100, 2 -> 50.5, 4 -> 10, 5 -> 20, 3 -> not entered.
-Totals: 1 = 160, 2 = 60.5, 5 = 21, 4 = 14, 3 = 0 (missing free response).
+Totals: 1 = 160, 2 = 60.5, 5 = 21, 4 = 14; team 3 has no total or rank yet (free
+response missing).
 """
 
 import csv
@@ -99,18 +100,22 @@ def test_full_tournament_flow(api: TestClient) -> None:
         (2, 2, "10.00", "50.5", "60.50", []),
         (3, 5, "1.00", "20.0", "21.00", []),
         (4, 4, "4.00", "10.0", "14.00", []),
-        (5, 3, "0.00", None, "0.00", ["free_response"]),
+        (None, 3, "0.00", None, None, ["free_response"]),
     ]
     assert res["teams_complete"] == 4 and res["scans_needing_review"] == 0
+    assert res["teams_without_scan"] == 0 and res["teams_without_free_response"] == 1
+    assert res["rows"][0]["scan_id"] == s1["id"]
     assert res["rows"][0]["mcq_by"] == "Alice" and res["rows"][0]["free_response_by"] == "Alice"
 
-    rows = list(csv.DictReader(io.StringIO(api.get("/api/events/AP/results.csv").text)))
+    text = api.get("/api/events/AP/results.csv").text
+    assert text.startswith("\ufeff")  # Excel reads UTF-8 correctly with the BOM
+    rows = list(csv.DictReader(io.StringIO(text.removeprefix("\ufeff"))))
     assert [(r["rank"], r["team_number"], r["team_name"], r["total"]) for r in rows] == [
         ("1", "1", "Alpha HS", "160"),
         ("2", "2", "Beta MS", "60.5"),
         ("3", "5", "Epsilon", "21"),
         ("4", "4", "Delta HS", "14"),
-        ("5", "3", "Gamma Acad", "0"),
+        ("", "3", "Gamma Acad", ""),
     ]
     assert rows[4]["missing"] == "free_response"
 

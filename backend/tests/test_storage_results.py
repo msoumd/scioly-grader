@@ -105,13 +105,16 @@ def test_ties_share_a_rank() -> None:
         _row(6, "0", None),
     ]
     rank(rows)
+    # Only teams with both parts get a total and a rank.
     assert [(r.team_number, r.rank) for r in rows] == [
         (1, 1),
         (2, 1),
         (3, 3),
-        (4, 4),
+        (4, None),
         (5, None),
-        (6, 5),
+        (6, None),
     ]
     assert _row(6, "0", None).missing == ["free_response"]
-    assert _row(5, None, None).total == Decimal("0.00")
+    assert _row(6, "0", None).total is None
+    assert _row(5, None, None).total is None
+    assert _row(3, "55", "0").total == Decimal("55")

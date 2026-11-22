@@ -158,8 +158,16 @@ def sheet_pdf(code: str, grader: GraderDep, db: Annotated[Session, Depends(get_d
 
 
 @router.post("/{code}/rescore", response_model=RescoreOut)
-def rescore(code: str, admin: AdminDep, db: Annotated[Session, Depends(get_db)]) -> RescoreOut:
+def rescore(
+    code: str,
+    admin: AdminDep,
+    db: Annotated[Session, Depends(get_db)],
+    dry_run: Annotated[bool, Query(description="Only count the scans that would change")] = False,
+) -> RescoreOut:
     """Recompute every scan's score after the answer key changed (audited)."""
     changed = rescore_event(db, get_event(db, code), admin.id)
+    if dry_run:
+        db.rollback()
+        return RescoreOut(changed=changed, saved=False)
     db.commit()
     return RescoreOut(changed=changed)

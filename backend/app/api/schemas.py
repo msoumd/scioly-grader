@@ -66,6 +66,7 @@ class TeamsImportOut(BaseModel):
     inserted: int = 0
     updated: int = 0
     text: str
+    saved: bool = False
 
 
 class TeamOut(BaseModel):
@@ -172,8 +173,10 @@ class ResultRow(BaseModel):
     team_name: str
     mcq: Decimal | None
     free_response: Decimal | None
-    total: Decimal
+    total: Decimal | None  # only once both parts are in
     missing: list[str]  # "multiple_choice", "free_response", "review" (scan waiting)
+    scan_id: int | None = None  # the counted scan
+    free_response_id: int | None = None
     mcq_by: str | None
     mcq_at: datetime | None
     free_response_by: str | None
@@ -186,11 +189,14 @@ class ResultsOut(BaseModel):
     rows: list[ResultRow]
     teams_complete: int
     teams_missing_something: int
+    teams_without_scan: int
+    teams_without_free_response: int
     scans_needing_review: int
 
 
 class RescoreOut(BaseModel):
     changed: int
+    saved: bool = True
 
 
 class AuditOut(BaseModel):

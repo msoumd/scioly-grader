@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,8 +26,10 @@ async def import_teams(
     admin: AdminDep,
     db: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings_dep)],
+    dry_run: Annotated[bool, Query(description="Check the file without saving")] = False,
 ) -> TeamsImportOut:
-    """Upload ``team_number,team_name`` CSV. Saved only if every line is valid."""
+    """Upload ``team_number,team_name`` CSV. Saved only if every line is valid (and not
+    ``dry_run``)."""
     data = await read_limited(file, settings.max_upload_mb)
     report = parse_teams_csv(data, Path(file.filename or "teams.csv").name)
     out = TeamsImportOut(
@@ -36,12 +38,23 @@ async def import_teams(
     if not report.ok:
         return out
     result = save_teams(db, report.teams)
+    if dry_run:
+        db.rollback()
+        return out.model_copy(
+            update={
+                "inserted": result.inserted,
+                "updated": result.updated,
+                "warnings": [*report.warnings, *result.warnings],
+                "saved": False,
+            }
+        )
     db.commit()
     return out.model_copy(
         update={
             "inserted": result.inserted,
             "updated": result.updated,
             "warnings": [*report.warnings, *result.warnings],
+            "saved": True,
         }
     )
 
