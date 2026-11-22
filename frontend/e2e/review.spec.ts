@@ -25,6 +25,9 @@ test("a rubbed-out second mark: fix it, confirm, and it counts with the right sc
 
   await page.goto(`/#/review/${id}`);
   await expect(page.getByText(/This sheet counts for team 4/)).toBeVisible();
+  // Its photos are gone once counted; the answers stay.
+  await expect(page.getByText(/photos were deleted once it was counted/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show original photo" })).toHaveCount(0);
 });
 
 test("missing team number: type it on the keypad, confirm, and the change is in the history", async ({
