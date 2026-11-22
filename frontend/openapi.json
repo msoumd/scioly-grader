@@ -1324,7 +1324,7 @@
  "info": {
   "description": "Science Olympiad bubble-sheet grader. Log in with `POST /api/login` first; the session cookie is then sent automatically from this page.",
   "title": "scioly-grader",
-  "version": "0.6.0"
+  "version": "0.9.0"
  },
  "openapi": "3.1.0",
  "paths": {
@@ -2531,6 +2531,7 @@
   },
   "/health": {
    "get": {
+    "description": "Liveness check for the host and uptime monitors. ``commit`` is the deployed git\ncommit (set by Render) so the deploy workflow can tell when a new version is live.",
     "operationId": "health_health_get",
     "responses": {
      "200": {

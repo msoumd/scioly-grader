@@ -137,8 +137,10 @@ def test_every_table_has_row_level_security_on_postgres(migrated_engine: Engine)
         open_tables = (
             conn.execute(
                 text(
-                    "select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
-                    "where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity"
+                    "select c.relname from pg_class c "
+                    "join pg_namespace n on n.oid = c.relnamespace "
+                    "where n.nspname = 'public' and c.relkind = 'r' "
+                    "and not c.relrowsecurity"
                 )
             )
             .scalars()
