@@ -50,3 +50,5 @@ supabase/.temp/
 # Browser-test fixtures (made by backend/scripts/e2e_assets.py)
 frontend/e2e/.assets/
 backend/data/e2e/
+# Record-only screenshots (rewritten every run; CI uploads them)
+frontend/e2e/__screenshots__/*-webkit-iphone.png
