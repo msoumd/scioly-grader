@@ -2,6 +2,35 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-22 — Hosting, deploys, backups and security (phase 9)
+
+**Where it runs.** One Docker container on Render's **Standard** plan (1 CPU, 2 GB), serving the API and the phone app on one HTTPS address. Supabase Pro holds Postgres and the private `scans` bucket. Step-by-step setup and costs are in [`DEPLOY.md`](DEPLOY.md).
+
+**One web process.** The login limiter and the reading queue live in memory, so two processes would double the allowed PIN guesses and could both retry a stuck scan. Reading uses a thread pool inside the one process.
+
+**Safe by default in production** (`ENVIRONMENT=production`). The app refuses to start without:
+- a 32+ character session secret;
+- a 6+ character tournament PIN, and an 8+ character admin PIN that is different;
+- HTTPS-only cookies;
+- Postgres, and Supabase storage (local files are lost on redeploy).
+
+Also in production: `/docs` is off, HSTS is sent over HTTPS, and Sentry reports errors if `SENTRY_DSN` is set (no personal data).
+
+**Bugs found while preparing for real traffic:**
+- **Upload overload.** 60 uploads at once exhausted the database connection pool and returned errors. Each upload held a connection while the phone was still sending the photo, and did blocking work on the server's main loop. Now the file arrives first, the work runs in a worker thread, and the connection is released before the photo goes to storage. The pool is also larger (10 + 20).
+- **PIN guessing.** Behind the hosting proxy, the login limiter trusted the leftmost `X-Forwarded-For` address, which the caller writes, so a guesser could dodge the limit by inventing addresses. Now the address the proxy itself appended is used (`TRUSTED_PROXY_HOPS`). A site-wide limit of 100 wrong PINs per 5 minutes covers anyone who rotates real addresses.
+- **Row-level security.** Supabase's REST API could see the migrations table. RLS is now on for every table, and a Postgres test checks it.
+
+**Deploys.** After CI passes on `main`, `deploy.yml` asks Render to deploy that exact commit. `/health` reports the commit, so the workflow waits until it is live, then smoke-tests the site (health, app page, HSTS, login, events). CI also builds the container on every PR and:
+- checks it refuses unsafe production settings;
+- starts it and runs the smoke test;
+- runs a 30-sheet load check;
+- checks it runs as a non-root user and its health check passes.
+
+**Backups.** Nightly: `pg_dump` of the app's tables, encrypted with AES-256 and a passphrase, kept 14 days as a workflow artifact, and restored into a scratch Postgres every night to prove it works. Photos are not included: the scores are already in the database, and a paper sheet can be scanned again.
+
+**Load.** On a 1-CPU, 2 GB container, one sheet takes 0.5 s, and 60 uploaded at once all finish within 33 s (about 110 sheets a minute) with memory under 300 MB.
+
 ## 2026-11-21 — Free response, results and event setup (phase 8)
 
 **Totals only when complete.** A team's total and rank appear only once both the counted scan and the free-response score are in, as the spec says. Until then the row shows "—" and what is missing. This replaces phase 5's behaviour, where a missing part counted as 0 and the team was still ranked; that could make a half-entered team look like it was losing.

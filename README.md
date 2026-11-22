@@ -119,6 +119,16 @@ The **Review** tab (with a count badge) lists sheets that need a person, oldest 
 
 The **Scores** tab is where graders type each team's free-response total. The **Results** tab shows the ranked table, what is still missing, **Download CSV** and **Print**. A supervisor can set up everything from the app under **Event setup** (on the event list, or on the Results tab): import the event spreadsheet and teams list, download answer sheets, and re-score after a key change. The command line is no longer needed.
 
+## Put it online
+
+See [`docs/DEPLOY.md`](docs/DEPLOY.md): Supabase for data and photos, Render for the app, GitHub for automatic deploys and nightly backups, with costs. To try the production container locally:
+
+```bash
+docker build -t scioly-grader .
+docker run -p 8000:8000 -e TOURNAMENT_PIN=246810 -e ADMIN_PIN=13579135 -e SESSION_SECRET=$(openssl rand -hex 32) \
+  -e COOKIE_SECURE=false -e DATABASE_URL=sqlite:////app/backend/data/app.db scioly-grader
+```
+
 ## Read a sheet
 
 ```bash
