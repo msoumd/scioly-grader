@@ -67,7 +67,58 @@ def assets(out: Path) -> None:
     (out / "three_pages.pdf").write_bytes(buf.getvalue())
     # Portrait 720x1280 "camera", like a phone held over the sheet.
     (out / "camera_team11.y4m").write_bytes(_y4m(_photo(setup, 11, seed=11, size=(720, 1280))))
+    review_assets(setup, out)
     print(f"wrote e2e assets to {out}")
+
+
+def _read(setup, jpeg: bytes):  # type: ignore[no-untyped-def]
+    from app.services.detection import load_images, read_sheet
+
+    img = load_images(jpeg, "x.jpg")[0]
+    return read_sheet(img, lambda c, v: setup, fallback=setup, valid_teams=set(range(1, 13)))
+
+
+def _find(setup, want, marks, team, styles=None) -> bytes:  # type: ignore[no-untyped-def]
+    """First seed whose photo the real reader flags exactly as the test needs."""
+    for seed in range(100, 160):
+        jpeg = sheet_photo(setup, marks, team, seed=seed, styles=styles)
+        if want(_read(setup, jpeg)):
+            return jpeg
+    raise SystemExit(f"no seed gave the wanted read for {team}")
+
+
+def review_assets(setup, out: Path) -> None:  # type: ignore[no-untyped-def]
+    """Sheets the review-screen tests need, each checked against the real reader."""
+    from app.harness.truth import FillStyle, bubble_key
+
+    key, d = _key(setup), setup.event.team_number_digits
+    erased = "A" if key[5][0] != "A" else "B"  # a rubbed-out wrong answer next to the real one
+
+    def only_q5(r) -> bool:  # type: ignore[no-untyped-def]
+        flagged = [q for q, x in r.questions.items() if x.needs_review]
+        return r.team_number == 4 and not r.team_flags and flagged == [5]
+
+    def no_team(r) -> bool:  # type: ignore[no-untyped-def]
+        flagged = [q for q, x in r.questions.items() if x.needs_review]
+        return r.team_number is None and not flagged and r.readable
+
+    def clean(n: int):  # type: ignore[no-untyped-def]
+        return lambda r: r.team_number == n and not r.flagged_questions and r.readable
+
+    sheets = {
+        "review_erased_team4.jpg": _find(
+            setup, only_q5, key, team_digits(4, d), {bubble_key(5, erased): FillStyle.erased}
+        ),
+        "review_noteam_a.jpg": _find(setup, no_team, key, [[] for _ in range(d)]),
+        "review_noteam_b.jpg": _find(setup, no_team, {1: key[1]}, [[] for _ in range(d)]),
+        "review_team99.jpg": _find(setup, clean(99), key, team_digits(99, d)),
+        "review_dup_team6_a.jpg": _find(setup, clean(6), key, team_digits(6, d)),
+        "review_dup_team6_b.jpg": _find(
+            setup, clean(6), {q: v for q, v in key.items() if q != 1}, team_digits(6, d)
+        ),
+    }
+    for name, data in sheets.items():
+        (out / name).write_bytes(data)
 
 
 def pgm(path: Path) -> None:

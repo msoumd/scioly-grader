@@ -12,7 +12,7 @@ test("auto-capture fires once on a steady sheet and the scan is created", async 
   await page.getByRole("button", { name: "Start camera" }).click();
   await expect(page.getByText("1 captured this session")).toBeVisible({ timeout: 20_000 });
   await expect(scanRow(page, 11)).toContainText("Counted", { timeout: 30_000 });
-  await expect(page.getByRole("status")).toContainText("next sheet");
+  await expect(page.getByRole("status").filter({ hasText: "next sheet" })).toBeVisible();
 
   // The same sheet staying in view is not captured again.
   await page.waitForTimeout(2500);
