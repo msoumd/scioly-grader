@@ -10,7 +10,10 @@ const CORNERS: Point[] = [
   { x: 200, y: 490 },
 ];
 
-function frame(t: number, opts: { shift?: number; ids?: number[]; brightness?: number; scale?: number } = {}): Frame {
+function frame(
+  t: number,
+  opts: { shift?: number; ids?: number[]; brightness?: number; scale?: number } = {},
+): Frame {
   const { shift = 0, ids = [0, 1, 2, 3], brightness = 150, scale = 1 } = opts;
   const markers = new Map<number, Point>();
   for (const id of ids) {
@@ -28,19 +31,28 @@ function run(tracker: SteadinessTracker, frames: Frame[]): string[] {
 describe("steadiness", () => {
   it("is ready only after ~0.5 s of all four markers holding still", () => {
     const t = new SteadinessTracker();
-    const out = run(t, [0, 125, 250, 375, 500].map((ms) => frame(ms)));
+    const out = run(
+      t,
+      [0, 125, 250, 375, 500].map((ms) => frame(ms)),
+    );
     expect(out).toEqual(["hold_still", "hold_still", "hold_still", "hold_still", "ready"]);
   });
 
   it("small hand tremor (a couple of pixels) still counts as steady", () => {
     const t = new SteadinessTracker();
-    const out = run(t, [0, 125, 250, 375, 500].map((ms, i) => frame(ms, { shift: i % 2 ? 2 : -2 })));
+    const out = run(
+      t,
+      [0, 125, 250, 375, 500].map((ms, i) => frame(ms, { shift: i % 2 ? 2 : -2 })),
+    );
     expect(out.at(-1)).toBe("ready");
   });
 
   it("movement restarts the wait", () => {
     const t = new SteadinessTracker();
-    run(t, [0, 125, 250, 375].map((ms) => frame(ms)));
+    run(
+      t,
+      [0, 125, 250, 375].map((ms) => frame(ms)),
+    );
     expect(t.push(frame(500, { shift: 30 }))).toBe("hold_still"); // moved
     expect(t.push(frame(750, { shift: 30 }))).toBe("hold_still");
     expect(t.push(frame(1000, { shift: 30 }))).toBe("ready"); // 0.5 s after the move
@@ -48,7 +60,10 @@ describe("steadiness", () => {
 
   it("losing a marker resets and asks for all four corners", () => {
     const t = new SteadinessTracker();
-    run(t, [0, 125, 250, 375].map((ms) => frame(ms)));
+    run(
+      t,
+      [0, 125, 250, 375].map((ms) => frame(ms)),
+    );
     expect(t.push(frame(500, { ids: [0, 1, 2] }))).toBe("show_corners");
     expect(t.push(frame(625))).toBe("hold_still");
   });

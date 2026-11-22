@@ -21,7 +21,9 @@ describe("API errors", () => {
   });
 
   it("maps codes to plain sentences", () => {
-    expect(errorMessage(new ApiError(429, "too_many_attempts", "x"))).toMatch(/wait a few minutes/i);
+    expect(errorMessage(new ApiError(429, "too_many_attempts", "x"))).toMatch(
+      /wait a few minutes/i,
+    );
     expect(errorMessage(new ApiError(0, "network", "x"))).toMatch(/No connection/);
     expect(errorMessage(new ApiError(413, "too_large", "x"))).toMatch(/too big/);
     expect(errorMessage(new ApiError(422, "something_new", "Team 99 is not on the list"))).toBe(

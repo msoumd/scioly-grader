@@ -21,12 +21,7 @@ export interface Frame {
 }
 
 export type Guidance =
-  | "too_dark"
-  | "no_sheet"
-  | "show_corners"
-  | "move_closer"
-  | "hold_still"
-  | "ready";
+  "too_dark" | "no_sheet" | "show_corners" | "move_closer" | "hold_still" | "ready";
 
 export const GUIDANCE_TEXT: Record<Guidance, string> = {
   too_dark: "Too dark — find more light",

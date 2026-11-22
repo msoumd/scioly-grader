@@ -20,7 +20,7 @@ function scripted(...answers: (UploadOut | Error)[]): Uploader & { calls: number
     const a = answers.shift() ?? OK;
     if (a instanceof Error) throw a;
     return a;
-  }) as Uploader & { calls: number };
+  }) as unknown as Uploader & { calls: number };
   fn.calls = 0;
   return fn;
 }
@@ -35,7 +35,9 @@ afterEach(() => vi.useRealTimers());
 
 describe("retry rules", () => {
   it("backs off 1, 2, 4 ... seconds up to 30", () => {
-    expect([1, 2, 3, 4, 5, 6, 10].map(retryDelay)).toEqual([1000, 2000, 4000, 8000, 16000, 30000, 30000]);
+    expect([1, 2, 3, 4, 5, 6, 10].map(retryDelay)).toEqual([
+      1000, 2000, 4000, 8000, 16000, 30000, 30000,
+    ]);
   });
 
   it("retries network and server trouble, pauses for login, gives up on bad files", () => {
@@ -95,7 +97,10 @@ describe("upload queue", () => {
 
   it("keeps a refused file with the reason until dismissed", async () => {
     const store = new MemoryStore();
-    const q = new UploadQueue(store, scripted(new ApiError(415, "unsupported_type", "Not a photo")));
+    const q = new UploadQueue(
+      store,
+      scripted(new ApiError(415, "unsupported_type", "Not a photo")),
+    );
     const item = await q.add("AP", blob(), "notes.txt");
     await flush();
     expect(q.snapshot()[0]).toMatchObject({ state: "rejected", error: "Not a photo" });
@@ -129,7 +134,11 @@ describe("upload queue", () => {
       return OK;
     };
     const q = new UploadQueue(new MemoryStore(), up);
-    await Promise.all([q.add("AP", blob(), "1.jpg"), q.add("AP", blob(), "2.jpg"), q.add("AP", blob(), "3.jpg")]);
+    await Promise.all([
+      q.add("AP", blob(), "1.jpg"),
+      q.add("AP", blob(), "2.jpg"),
+      q.add("AP", blob(), "3.jpg"),
+    ]);
     await flush();
     expect(order).toEqual(["1.jpg", "2.jpg", "3.jpg"]);
   });

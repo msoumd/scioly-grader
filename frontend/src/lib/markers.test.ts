@@ -9,7 +9,9 @@ import { findCornerMarkers, meanBrightness, type FrameImage } from "./markers";
  * backend (scripts/e2e_assets.py --pgm), so this checks the browser detector agrees with
  * the markers the server prints. */
 function fixture(): FrameImage {
-  const raw = gunzipSync(readFileSync(fileURLToPath(new URL("./__fixtures__/sheet_frame.pgm.gz", import.meta.url))));
+  const raw = gunzipSync(
+    readFileSync(fileURLToPath(new URL("./__fixtures__/sheet_frame.pgm.gz", import.meta.url))),
+  );
   const header = raw.subarray(0, 32).toString("latin1");
   const m = /^P5\s+(\d+)\s+(\d+)\s+255\s/.exec(header);
   if (!m) throw new Error("bad PGM");
