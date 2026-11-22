@@ -25,8 +25,8 @@ def _upload(api: TestClient, jpeg: bytes) -> dict:  # type: ignore[type-arg]
 def test_team_crop_is_viewable_and_storage_key_is_not_exposed(api: TestClient) -> None:
     _setup(api)
     login(api)
-    scan = _upload(api, sheet_jpeg(all_correct(), [[0], [1]], seed=1))
-    assert scan["team_crop_url"]
+    scan = _upload(api, sheet_jpeg(all_correct(), [[9], [9]], seed=3))  # waits for review
+    assert scan["status"] == "needs_review" and scan["team_crop_url"]
     crop = api.get(scan["team_crop_url"])
     assert crop.status_code == 200 and crop.headers["content-type"] == "image/png"
     assert "crop" not in scan["team"]

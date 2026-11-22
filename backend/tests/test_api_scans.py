@@ -245,12 +245,14 @@ def test_background_reading_and_stuck_recovery(migrated_engine: Engine, tmp_path
         r = api.post(
             "/api/scans",
             data={"event_code": "AP"},
-            files={"file": ("p.jpg", sheet_jpeg({1: ["D"]}, [[0], [1]]), "image/jpeg")},
+            # No team number: it waits for review, so its photo is kept (a crash mid-read
+            # happens before any photo is deleted).
+            files={"file": ("p.jpg", sheet_jpeg({1: ["D"]}, [[], []]), "image/jpeg")},
         )
         assert r.json()["scans"][0]["status"] == "processing"
         app.state.reading_queue.wait()
         scan_id = r.json()["scans"][0]["id"]
-        assert api.get(f"/api/scans/{scan_id}").json()["status"] == "confirmed"
+        assert api.get(f"/api/scans/{scan_id}").json()["status"] == "needs_review"
 
         # Simulate a crash mid-read: put it back to processing, long ago.
         with Session(migrated_engine) as db:
@@ -259,14 +261,13 @@ def test_background_reading_and_stuck_recovery(migrated_engine: Engine, tmp_path
                 .where(Scan.id == scan_id)
                 .values(
                     status="processing",
-                    is_counted=False,
                     updated_at=datetime.now(UTC) - timedelta(minutes=10),
                 )
             )
             db.commit()
         assert app.state.reading_queue.recover_stuck() == 1
         app.state.reading_queue.wait()
-        assert api.get(f"/api/scans/{scan_id}").json()["status"] == "confirmed"
+        assert api.get(f"/api/scans/{scan_id}").json()["status"] == "needs_review"
         assert app.state.reading_queue.recover_stuck() == 0
 
 

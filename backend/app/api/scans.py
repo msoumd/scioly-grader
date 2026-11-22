@@ -33,6 +33,7 @@ from app.config import Settings
 from app.db.models import AuditLog, Event, Grader, Scan, ScanStatus, Team
 from app.services import scans as rules
 from app.services.detection.loader import PDFIUM_LOCK
+from app.services.photos import delete_done_photos
 from app.services.reading import ReadingQueue
 from app.services.storage import Storage
 
@@ -118,7 +119,8 @@ def scan_out(db: Session, scan: Scan, storage: Storage) -> ScanOut:
         grader=grader.name if grader else "?",
         created_at=scan.created_at,
         updated_at=scan.updated_at,
-        original_url=storage.url(scan.image_path),
+        original_url=None if scan.photos_deleted else storage.url(scan.image_path),
+        photos_deleted=scan.photos_deleted,
         warped_url=storage.url(scan.warped_path) if scan.warped_path else None,
         page_flags=detected.get("page_flags", []),
         team=team,
@@ -232,12 +234,22 @@ def correct_scan(
     return scan_out(db, scan, storage)
 
 
+def _photos_done(db: Session, storage: Storage, settings: Settings, ids: list[int] | None) -> None:
+    """After a sheet is counted or discarded its photos are no longer needed."""
+    if settings.delete_photos_when_done:
+        delete_done_photos(db, storage, ids)
+
+
+SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
+
+
 @router.post("/scans/{scan_id}/confirm", response_model=ScanOut)
 def confirm_scan(
     scan_id: int,
     grader: GraderDep,
     db: Db,
     storage: StorageDep,
+    settings: SettingsDep,
     body: ConfirmIn | None = None,
 ) -> ScanOut:
     """A grader has checked this scan: it now counts for its team. A team number that is
@@ -246,6 +258,7 @@ def confirm_scan(
     accept = body.accept_unknown_team if body else False
     rules.confirm(db, scan, grader.id, rules.team_numbers(db), accept)
     db.commit()
+    _photos_done(db, storage, settings, [scan.id])
     return scan_out(db, scan, storage)
 
 
@@ -255,6 +268,7 @@ def discard_scan(
     grader: GraderDep,
     db: Db,
     storage: StorageDep,
+    settings: SettingsDep,
     body: DiscardIn | None = None,
 ) -> ScanOut:
     """Bad photo or unwanted duplicate: keep the image but never count it."""
@@ -262,6 +276,7 @@ def discard_scan(
     reason = " ".join(body.reason.split()) if body and body.reason else None
     rules.discard(db, scan, grader.id, reason)
     db.commit()
+    _photos_done(db, storage, settings, [scan.id])
     return scan_out(db, scan, storage)
 
 
@@ -341,10 +356,12 @@ def choose_counted_scan(
     admin: AdminDep,
     db: Db,
     storage: StorageDep,
+    settings: SettingsDep,
 ) -> ScanOut:
     """Supervisor picks which scan counts for a team; the team's other scans are discarded."""
     event = get_event(db, code)
     scan = get_scan(db, body.scan_id)
     rules.choose_counted(db, event, team_number, scan, admin.id)
     db.commit()
+    _photos_done(db, storage, settings, None)  # the chosen one and the discarded others
     return scan_out(db, scan, storage)

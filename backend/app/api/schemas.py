@@ -108,8 +108,9 @@ class ScanOut(BaseModel):
     grader: str
     created_at: datetime
     updated_at: datetime
-    original_url: str
+    original_url: str | None  # None once the photos were deleted
     warped_url: str | None
+    photos_deleted: bool = False
     page_flags: list[str] = []
     team: dict[str, Any] = {}
     team_crop_url: str | None = None

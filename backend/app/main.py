@@ -58,8 +58,9 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             app.state.reading_queue.recover_stuck()
+            app.state.reading_queue.sweep_photos()
         except Exception:  # a fresh database without tables must not stop startup
-            log.exception("could not check for stuck scans")
+            log.exception("could not check for stuck scans or leftover photos")
         yield
         app.state.reading_queue.shutdown()
 

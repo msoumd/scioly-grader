@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     supabase_service_role_key: str | None = None  # server-side only, never sent to clients
     supabase_bucket: str = "scans"
     signed_url_seconds: int = 600
+    # Delete a sheet's photos once it is counted or discarded (keeps storage tiny).
+    delete_photos_when_done: bool = True
 
     # --- uploads and reading
     max_upload_mb: int = 25

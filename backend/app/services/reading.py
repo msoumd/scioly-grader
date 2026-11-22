@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings
 from app.db.models import Scan, ScanStatus
+from app.services.photos import delete_done_photos
 from app.services.scans import process_scan
 from app.services.storage import Storage
 
@@ -39,6 +40,8 @@ class ReadingQueue:
         try:
             with self.sessions() as db:
                 process_scan(db, scan_id, self.storage)
+                if self.settings.delete_photos_when_done:  # counted without review
+                    delete_done_photos(db, self.storage, [scan_id])
         except Exception:  # pragma: no cover - process_scan already records failures
             log.exception("reading scan %s crashed", scan_id)
 
@@ -67,6 +70,13 @@ class ReadingQueue:
             log.warning("retrying scan %s left in processing", scan_id)
             self.submit(scan_id)
         return len(stuck)
+
+    def sweep_photos(self) -> int:
+        """Delete photos of counted/discarded scans that an earlier attempt missed."""
+        if not self.settings.delete_photos_when_done:
+            return 0
+        with self.sessions() as db:
+            return delete_done_photos(db, self.storage)
 
     def shutdown(self) -> None:
         if self.pool is not None:

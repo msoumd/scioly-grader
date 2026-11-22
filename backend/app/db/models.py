@@ -27,6 +27,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
     text,
 )
@@ -153,6 +154,9 @@ class Scan(Base):
     image_path: Mapped[str] = mapped_column(Text)
     page: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     warped_path: Mapped[str | None] = mapped_column(Text)  # straightened page image
+    # Photos (original, straightened page, crops) are deleted once the sheet is counted or
+    # discarded; the marks and score stay. See app/services/photos.py.
+    photos_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     error: Mapped[str | None] = mapped_column(Text)  # why reading failed
     # Reader output: {"questions": {"<q>": {"marked", "fills", "confidence", "flags",
     # "crop"}}, "team": {...}, "page_flags": [...], "event_code", "sheet_version", ...}
