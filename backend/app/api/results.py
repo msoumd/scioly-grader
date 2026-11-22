@@ -82,6 +82,8 @@ def get_results(code: str, grader: GraderDep, db: Db) -> ResultsOut:
             mcq_at=r.mcq_at,
             free_response_by=r.fr_by,
             free_response_at=r.fr_at,
+            scan_id=r.scan_id,
+            free_response_id=r.free_response_id,
         )
         for r in rows
     ]
@@ -92,6 +94,8 @@ def get_results(code: str, grader: GraderDep, db: Db) -> ResultsOut:
         rows=out,
         teams_complete=complete,
         teams_missing_something=len(rows) - complete,
+        teams_without_scan=sum(1 for r in rows if r.mcq is None),
+        teams_without_free_response=sum(1 for r in rows if r.free_response is None),
         scans_needing_review=pending_reviews(db, event),
     )
 
@@ -100,10 +104,44 @@ def get_results(code: str, grader: GraderDep, db: Db) -> ResultsOut:
 def get_results_csv(code: str, grader: GraderDep, db: Db) -> Response:
     event = get_event(db, code)
     return Response(
-        results_csv(results(db, event)),
-        media_type="text/csv",
+        results_csv(results(db, event)).encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{event.code}_results.csv"'},
     )
+
+
+@router.get(
+    "/events/{code}/teams/{team_number}/free-response/history", response_model=list[AuditOut]
+)
+def free_response_history(code: str, team_number: int, grader: GraderDep, db: Db) -> list[AuditOut]:
+    """Every entry and change of this team's free-response total, oldest first."""
+    event = get_event(db, code)
+    row = db.scalars(
+        select(FreeResponseScore).where(
+            FreeResponseScore.event_id == event.id, FreeResponseScore.team_number == team_number
+        )
+    ).one_or_none()
+    if row is None:
+        return []
+    found = db.execute(
+        select(AuditLog, Grader.name)
+        .join(Grader, Grader.id == AuditLog.grader_id)
+        .where(AuditLog.entity == "free_response_score", AuditLog.entity_id == row.id)
+        .order_by(AuditLog.id)
+    ).all()
+    return [
+        AuditOut(
+            id=a.id,
+            entity=a.entity,
+            entity_id=a.entity_id,
+            field=a.field,
+            old_value=a.old_value,
+            new_value=a.new_value,
+            grader=name,
+            created_at=a.created_at,
+        )
+        for a, name in found
+    ]
 
 
 @router.get("/audit", response_model=list[AuditOut])

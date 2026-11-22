@@ -144,9 +144,13 @@ def test_rescore_after_key_change(api: TestClient, tmp_path: Path) -> None:
     assert locked.status_code == 409 and locked.json()["code"] == "event_locked"
     r = api.post("/api/events/import", files={"file": ("a.xlsx", path.read_bytes(), XLSX)})
     assert r.json()["action"] == "new_version"
-    assert api.post("/api/events/AP/rescore").json() == {"changed": 1}
+    preview = api.post("/api/events/AP/rescore?dry_run=true").json()
+    assert preview == {"changed": 1, "saved": False}
+    assert api.post("/api/events/AP/rescore?dry_run=true").json()["changed"] == 1  # not saved
+    assert api.post("/api/events/AP/rescore").json() == {"changed": 1, "saved": True}
+    assert api.post("/api/events/AP/rescore").json()["changed"] == 0
     assert api.get(f"/api/scans/{scan['id']}").json()["mcq_score"] == "1.00"
-    assert api.post("/api/events/AP/rescore").json() == {"changed": 0}
+    assert api.post("/api/events/AP/rescore").json() == {"changed": 0, "saved": True}
 
 
 def test_multipage_pdf_upload(api: TestClient) -> None:

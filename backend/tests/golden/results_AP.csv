@@ -1,0 +1,7 @@
+﻿rank,team_number,team_name,multiple_choice,free_response,total,missing,multiple_choice_by,multiple_choice_at,free_response_by,free_response_at
+1,1,Alpha HS,50,10,60,,Alice,2026-11-21T14:03:05Z,Bo Chen,2026-11-21T15:30:00Z
+1,2,Beta MS,40.5,19.5,60,,Alice,2026-11-21T14:03:05Z,Bo Chen,2026-11-21T15:30:00Z
+3,3,Gamma Acad,55,0,55,,Alice,2026-11-21T14:03:05Z,Bo Chen,2026-11-21T15:30:00Z
+,4,Délta Escuela,,33,,multiple_choice,,,Bo Chen,2026-11-21T15:30:00Z
+,5,Epsilon,10,,,free_response,Alice,2026-11-21T14:03:05Z,,
+,6,Zeta,,,,multiple_choice free_response,,,,

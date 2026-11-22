@@ -16,6 +16,11 @@ export type EventDetail = Schemas["EventDetailOut"];
 export type TeamOut = Schemas["TeamOut"];
 export type DuplicateOut = Schemas["DuplicateOut"];
 export type AuditOut = Schemas["AuditOut"];
+export type ResultsOut = Schemas["ResultsOut"];
+export type ResultRow = Schemas["ResultRow"];
+export type EventImportOut = Schemas["EventImportOut"];
+export type TeamsImportOut = Schemas["TeamsImportOut"];
+export type RescoreOut = Schemas["RescoreOut"];
 
 /** Every failure, including "no connection" (status 0, code "network"). */
 export class ApiError extends Error {
@@ -47,6 +52,10 @@ const MESSAGES: Record<string, string> = {
   not_found: "Not found. It may have been removed.",
   team_missing: "Type the team number before confirming.",
   team_unknown: "That team number isn't on the teams list.",
+  over_max: "That's more than the free-response maximum.",
+  half_points: "Use whole or half points (like 42.5).",
+  event_locked:
+    "This event already has scans, so its questions can't change. Raise the sheet version in the spreadsheet to import a new version.",
   duplicate_team: "This team already has a counted sheet. A supervisor picks which one counts.",
   unreadable: "This page couldn't be read. Retake the photo.",
   not_ready: "This sheet is still being read. Try again in a moment.",
@@ -92,6 +101,23 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   return (await res.json()) as T;
 }
 
+function upload(path: string, file: File): Promise<Response> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  return fetch(path, { method: "POST", body: form, credentials: "same-origin" });
+}
+
+async function uploadJson<T>(path: string, file: File): Promise<T> {
+  let res: Response;
+  try {
+    res = await upload(path, file);
+  } catch {
+    throw new ApiError(0, "network", "No connection");
+  }
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
+}
+
 function json(method: string, body: unknown): RequestInit {
   return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
@@ -122,6 +148,24 @@ export const api = {
   history: (id: number) => request<AuditOut[]>(`/api/scans/${id}/history`),
   duplicates: (code: string) =>
     request<DuplicateOut[]>(`/api/events/${encodeURIComponent(code)}/duplicates`),
+  results: (code: string) => request<ResultsOut>(`/api/events/${encodeURIComponent(code)}/results`),
+  setFreeResponse: (code: string, team: number, value: string) =>
+    request<Schemas["FreeResponseOut"]>(
+      `/api/events/${encodeURIComponent(code)}/teams/${team}/free-response`,
+      json("PUT", { value }),
+    ),
+  freeResponseHistory: (code: string, team: number) =>
+    request<AuditOut[]>(
+      `/api/events/${encodeURIComponent(code)}/teams/${team}/free-response/history`,
+    ),
+  importEvent: (file: File, dryRun: boolean) =>
+    uploadJson<EventImportOut>(`/api/events/import?dry_run=${dryRun}`, file),
+  importTeams: (file: File, dryRun: boolean) =>
+    uploadJson<TeamsImportOut>(`/api/teams/import?dry_run=${dryRun}`, file),
+  rescore: (code: string, dryRun: boolean) =>
+    request<RescoreOut>(`/api/events/${encodeURIComponent(code)}/rescore?dry_run=${dryRun}`, {
+      method: "POST",
+    }),
   chooseCounted: (code: string, team: number, scanId: number) =>
     request<ScanOut>(
       `/api/events/${encodeURIComponent(code)}/teams/${team}/counted-scan`,

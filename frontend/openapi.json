@@ -734,6 +734,11 @@
      "changed": {
       "title": "Changed",
       "type": "integer"
+     },
+     "saved": {
+      "default": true,
+      "title": "Saved",
+      "type": "boolean"
      }
     },
     "required": [
@@ -777,6 +782,17 @@
        }
       ],
       "title": "Free Response By"
+     },
+     "free_response_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Free Response Id"
      },
      "mcq": {
       "anyOf": [
@@ -830,6 +846,17 @@
       ],
       "title": "Rank"
      },
+     "scan_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Scan Id"
+     },
      "team_name": {
       "title": "Team Name",
       "type": "string"
@@ -839,8 +866,15 @@
       "type": "integer"
      },
      "total": {
-      "title": "Total",
-      "type": "string"
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Total"
      }
     },
     "required": [
@@ -884,6 +918,14 @@
       "title": "Teams Missing Something",
       "type": "integer"
      },
+     "teams_without_free_response": {
+      "title": "Teams Without Free Response",
+      "type": "integer"
+     },
+     "teams_without_scan": {
+      "title": "Teams Without Scan",
+      "type": "integer"
+     },
      "total_points": {
       "title": "Total Points",
       "type": "string"
@@ -895,6 +937,8 @@
      "rows",
      "teams_complete",
      "teams_missing_something",
+     "teams_without_scan",
+     "teams_without_free_response",
      "scans_needing_review"
     ],
     "title": "ResultsOut",
@@ -1186,6 +1230,11 @@
      },
      "ok": {
       "title": "Ok",
+      "type": "boolean"
+     },
+     "saved": {
+      "default": false,
+      "title": "Saved",
       "type": "boolean"
      },
      "text": {
@@ -1544,6 +1593,18 @@
        "title": "Code",
        "type": "string"
       }
+     },
+     {
+      "description": "Only count the scans that would change",
+      "in": "query",
+      "name": "dry_run",
+      "required": false,
+      "schema": {
+       "default": false,
+       "description": "Only count the scans that would change",
+       "title": "Dry Run",
+       "type": "boolean"
+      }
      }
     ],
     "responses": {
@@ -1869,6 +1930,62 @@
      }
     },
     "summary": "Set Free Response",
+    "tags": [
+     "results"
+    ]
+   }
+  },
+  "/api/events/{code}/teams/{team_number}/free-response/history": {
+   "get": {
+    "description": "Every entry and change of this team's free-response total, oldest first.",
+    "operationId": "free_response_history_api_events__code__teams__team_number__free_response_history_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "team_number",
+      "required": true,
+      "schema": {
+       "title": "Team Number",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AuditOut"
+         },
+         "title": "Response Free Response History Api Events  Code  Teams  Team Number  Free Response History Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Free Response History",
     "tags": [
      "results"
     ]
@@ -2358,8 +2475,22 @@
   },
   "/api/teams/import": {
    "post": {
-    "description": "Upload ``team_number,team_name`` CSV. Saved only if every line is valid.",
+    "description": "Upload ``team_number,team_name`` CSV. Saved only if every line is valid (and not\n``dry_run``).",
     "operationId": "import_teams_api_teams_import_post",
+    "parameters": [
+     {
+      "description": "Check the file without saving",
+      "in": "query",
+      "name": "dry_run",
+      "required": false,
+      "schema": {
+       "default": false,
+       "description": "Check the file without saving",
+       "title": "Dry Run",
+       "type": "boolean"
+      }
+     }
+    ],
     "requestBody": {
      "content": {
       "multipart/form-data": {

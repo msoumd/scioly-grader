@@ -40,7 +40,10 @@ export function EventPicker({
       {events === null && !error && <p className="hint">Loading events…</p>}
       {events?.length === 0 && (
         <p className="alert alert--info">
-          No events yet. A supervisor needs to import the event spreadsheet first.
+          No events yet.{" "}
+          {me.role === "admin"
+            ? "Open Event setup below to import the event spreadsheet."
+            : "A supervisor needs to import the event spreadsheet first."}
         </p>
       )}
       {events && events.length > 0 && (
@@ -62,7 +65,12 @@ export function EventPicker({
           ))}
         </ul>
       )}
-      <p style={{ marginTop: 32 }}>
+      <p className="link-row" style={{ marginTop: 32 }}>
+        {me.role === "admin" && (
+          <a className="btn btn--quiet btn--small" href="#/setup">
+            Event setup
+          </a>
+        )}
         <button type="button" className="btn btn--quiet btn--small" onClick={onLogout}>
           Log out
         </button>

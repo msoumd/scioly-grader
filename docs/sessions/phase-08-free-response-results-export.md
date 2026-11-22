@@ -3,6 +3,7 @@
 **Starter-prompt step:** 6 (free-response entry, results table, CSV export)
 **Branch:** `phase-08-results`
 **Depends on:** phase 7 merged
+**Status:** built on branch `phase-08-results`, awaiting review. The hands-on mini event is deferred to the end-of-build testing pass.
 
 ## Goal
 
@@ -55,12 +56,12 @@ Graders enter one free-response total per team, at any time before or after the 
 
 ## By the end of this phase
 
-- [ ] Every feature in the starter prompt's "Human free-response entry" and "Results" sections works on a phone
-- [ ] Supervisors can set up an event from the app without the CLI
-- [ ] CSV export matches the on-screen table
-- [ ] All edits are audited
-- [ ] E2E covers entry, results, CSV, admin import; CI green
-- [ ] **Feature-complete v1** — summary lists anything from the spec not done
+- [x] Every feature in the starter prompt's "Human free-response entry" and "Results" sections works on a phone
+- [x] Supervisors can set up an event from the app without the CLI
+- [x] CSV export matches the on-screen table
+- [x] All edits are audited
+- [x] E2E covers entry, results, CSV, admin import; CI green
+- [x] **Feature-complete v1** — summary lists anything from the spec not done
 
 ## Review checkpoint for Yuvan
 

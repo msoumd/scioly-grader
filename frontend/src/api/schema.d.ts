@@ -234,6 +234,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/events/{code}/teams/{team_number}/free-response/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Free Response History
+         * @description Every entry and change of this team's free-response total, oldest first.
+         */
+        get: operations["free_response_history_api_events__code__teams__team_number__free_response_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/files/{key}": {
         parameters: {
             query?: never;
@@ -458,7 +478,8 @@ export interface paths {
         put?: never;
         /**
          * Import Teams
-         * @description Upload ``team_number,team_name`` CSV. Saved only if every line is valid.
+         * @description Upload ``team_number,team_name`` CSV. Saved only if every line is valid (and not
+         *     ``dry_run``).
          */
         post: operations["import_teams_api_teams_import_post"];
         delete?: never;
@@ -763,6 +784,11 @@ export interface components {
         RescoreOut: {
             /** Changed */
             changed: number;
+            /**
+             * Saved
+             * @default true
+             */
+            saved: boolean;
         };
         /** ResultRow */
         ResultRow: {
@@ -772,6 +798,8 @@ export interface components {
             free_response_at: string | null;
             /** Free Response By */
             free_response_by: string | null;
+            /** Free Response Id */
+            free_response_id?: number | null;
             /** Mcq */
             mcq: string | null;
             /** Mcq At */
@@ -782,12 +810,14 @@ export interface components {
             missing: string[];
             /** Rank */
             rank: number | null;
+            /** Scan Id */
+            scan_id?: number | null;
             /** Team Name */
             team_name: string;
             /** Team Number */
             team_number: number;
             /** Total */
-            total: string;
+            total: string | null;
         };
         /** ResultsOut */
         ResultsOut: {
@@ -801,6 +831,10 @@ export interface components {
             teams_complete: number;
             /** Teams Missing Something */
             teams_missing_something: number;
+            /** Teams Without Free Response */
+            teams_without_free_response: number;
+            /** Teams Without Scan */
+            teams_without_scan: number;
             /** Total Points */
             total_points: string;
         };
@@ -913,6 +947,11 @@ export interface components {
             inserted: number;
             /** Ok */
             ok: boolean;
+            /**
+             * Saved
+             * @default false
+             */
+            saved: boolean;
             /** Text */
             text: string;
             /**
@@ -1103,7 +1142,10 @@ export interface operations {
     };
     rescore_api_events__code__rescore_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only count the scans that would change */
+                dry_run?: boolean;
+            };
             header?: never;
             path: {
                 code: string;
@@ -1313,6 +1355,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FreeResponseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    free_response_history_api_events__code__teams__team_number__free_response_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                team_number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditOut"][];
                 };
             };
             /** @description Validation Error */
@@ -1679,7 +1753,10 @@ export interface operations {
     };
     import_teams_api_teams_import_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Check the file without saving */
+                dry_run?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
