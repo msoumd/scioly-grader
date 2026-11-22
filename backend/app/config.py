@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     cookie_secure: bool = True  # cookies only over HTTPS (set false only for plain-http dev)
     login_attempts_per_window: int = 10
     login_window_seconds: int = 300
+    login_attempts_all_ips: int = 100  # wrong PINs from everywhere together per window
+    # HTTPS proxies in front of the app that append to X-Forwarded-For (Render: 1).
+    trusted_proxy_hops: int = 0
 
     # --- storage of uploaded images
     storage_backend: Literal["local", "supabase"] = "local"
@@ -70,10 +73,10 @@ class Settings(BaseSettings):
         problems = []
         if self.session_secret == DEV_SECRET or len(self.session_secret) < 32:
             problems.append("SESSION_SECRET must be a long random value (32+ characters)")
-        if self.tournament_pin in ("change-me", "") or len(self.tournament_pin) < 4:
-            problems.append("TOURNAMENT_PIN must be set (4+ characters)")
-        if not self.admin_pin or len(self.admin_pin) < 6:
-            problems.append("ADMIN_PIN must be set (6+ characters)")
+        if self.tournament_pin in ("change-me", "") or len(self.tournament_pin) < 6:
+            problems.append("TOURNAMENT_PIN must be set (6+ characters)")
+        if not self.admin_pin or len(self.admin_pin) < 8:
+            problems.append("ADMIN_PIN must be set (8+ characters)")
         if self.admin_pin and self.admin_pin == self.tournament_pin:
             problems.append("ADMIN_PIN must differ from TOURNAMENT_PIN")
         if not self.cookie_secure:

@@ -21,6 +21,10 @@ services:
         value: scans
       - key: READER_WORKERS
         value: "2"
+      # Render's HTTPS front end appends the caller's IP to X-Forwarded-For. Check after
+      # the first deploy (docs/DEPLOY.md, "Check the login limiter sees real IPs").
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
       - key: SESSION_SECRET
         generateValue: true
       - key: DATABASE_URL # Supabase pooler connection string

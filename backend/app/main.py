@@ -78,7 +78,9 @@ def create_app(
     app.state.storage = storage
     app.state.reading_queue = ReadingQueue(sessions, storage, settings)
     app.state.login_limiter = auth.LoginLimiter(
-        settings.login_attempts_per_window, settings.login_window_seconds
+        settings.login_attempts_per_window,
+        settings.login_window_seconds,
+        settings.login_attempts_all_ips,
     )
 
     install_error_handlers(app)
