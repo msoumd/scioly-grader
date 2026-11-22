@@ -2,6 +2,23 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-22 — Budget hosting: photos deleted once a sheet is done
+
+Budget is $35/month, so Supabase stays on the **free** plan and Render runs **Starter** ($7) except in tournament week (**Standard**, $25, billed by the second). Load numbers for both are in [`DEPLOY.md`](DEPLOY.md).
+
+**Photos are deleted when a sheet is counted or discarded** (Yuvan's decision). That means the original upload, the straightened page, and the team and question crops (`app/services/photos.py`).
+- Marks, score, corrections and history stay, so results, CSV, re-scoring and re-opening still work.
+- A PDF's original is deleted only when all its pages are done.
+- A failed delete is retried at the next startup sweep.
+
+Storage then only holds sheets waiting for review, far under the free 1 GB.
+
+This replaces phase 7's "original photo always viewable": once a sheet is done, the paper sheet is the record. `DELETE_PHOTOS_WHEN_DONE=false` turns it off.
+
+**Supabase free caveats:**
+- It pauses after a week idle; the nightly backup's daily read should prevent that, and DEPLOY.md says to check before the tournament.
+- It has no built-in backups; the nightly encrypted backup covers the scores.
+
 ## 2026-11-22 — Hosting, deploys, backups and security (phase 9)
 
 **Where it runs.** One Docker container on Render's **Standard** plan (1 CPU, 2 GB), serving the API and the phone app on one HTTPS address. Supabase Pro holds Postgres and the private `scans` bucket. Step-by-step setup and costs are in [`DEPLOY.md`](DEPLOY.md).

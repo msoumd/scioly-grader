@@ -47,7 +47,7 @@ The app runs on the internet over HTTPS with Supabase Postgres and Supabase Stor
 - [ ] Backups run and a restore has been tested once *(backup + restore tested locally; nightly job runs once secrets are set)*
 - [ ] Error monitoring and uptime check active
 - [x] Load check results in the summary
-- [x] Costs listed for Yuvan (monthly and for tournament week)
+- [x] Costs listed for Yuvan (monthly and for tournament week): budget $35, so Supabase free + Render Starter, Standard for tournament week; photos deleted once a sheet is done
 
 ## Review checkpoint for Yuvan
 
