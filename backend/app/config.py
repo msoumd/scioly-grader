@@ -38,6 +38,9 @@ class Settings(BaseSettings):
 
     # --- web
     cors_origins: list[str] = []
+    # Built phone app to serve at "/": "" = the repo's frontend/dist if it was built,
+    # "off" = API only.
+    frontend_dist: str = ""
 
     @field_validator("cors_origins", mode="before")
     @classmethod

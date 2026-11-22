@@ -1,0 +1,547 @@
+/* Tokens: answer-sheet blue on cool paper, graphite ink. One accent; status colours only
+   where they carry meaning. System font: native on iPhone and works offline. */
+:root {
+  --ink: #22262c;
+  --ink-soft: #545b66;
+  --paper: #ffffff;
+  --desk: #eef1f4;
+  --rule: #d5dbe2;
+  --sheet-blue: #1f4e79;
+  --sheet-blue-dark: #163a5b;
+  --ok: #1e7b3c;
+  --review: #9a5800;
+  --bad: #b42318;
+  --focus: #2f7de1;
+
+  --radius-control: 12px;
+  --radius-panel: 16px;
+  --tap: 52px;
+  --gutter: 16px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue",
+    sans-serif;
+  font-size: 17px; /* iOS body size; inputs at 17px also stop Safari zooming in */
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--desk);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- buttons and fields ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--sheet-blue);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.btn:active {
+  background: var(--sheet-blue-dark);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.btn--block {
+  width: 100%;
+}
+.btn--quiet {
+  background: transparent;
+  color: var(--sheet-blue);
+  border: 2px solid var(--rule);
+}
+.btn--quiet:active {
+  background: var(--desk);
+}
+.btn--small {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 15px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.field label {
+  font-weight: 600;
+}
+.field input {
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+}
+.field input:focus {
+  border-color: var(--sheet-blue);
+  outline: none;
+}
+.hint {
+  color: var(--ink-soft);
+  font-size: 15px;
+  margin: 0;
+}
+
+.alert {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--bad);
+  background: #fdf1f0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+.alert--info {
+  border-color: var(--sheet-blue);
+  background: #eef4fa;
+}
+
+/* ---------- single-column pages (login, event picker) ---------- */
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 32px) var(--gutter) calc(var(--safe-bottom) + 32px);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.brand svg {
+  flex: none;
+}
+.page h1 {
+  font-size: 28px;
+  line-height: 1.15;
+  margin: 0;
+}
+.page h2 {
+  font-size: 21px;
+  margin: 28px 0 12px;
+}
+
+.choice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.choice {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  min-height: 64px;
+  border: 2px solid var(--rule);
+  border-radius: var(--radius-panel);
+  background: var(--paper);
+  cursor: pointer;
+}
+.choice[aria-pressed="true"] {
+  border-color: var(--sheet-blue);
+  box-shadow: inset 0 0 0 1px var(--sheet-blue);
+}
+.choice strong {
+  display: block;
+  font-size: 18px;
+}
+.choice span {
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+/* ---------- app shell ---------- */
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(var(--safe-top) + 8px) var(--gutter) 8px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.topbar__event {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.topbar__event strong {
+  display: block;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar__event span {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.content {
+  padding: 16px var(--gutter) 24px;
+  min-width: 0;
+}
+
+.tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding-bottom: var(--safe-bottom);
+}
+.tab {
+  min-height: 56px;
+  border: 0;
+  background: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.tab svg {
+  width: 24px;
+  height: 24px;
+}
+.tab[aria-current="page"] {
+  color: var(--sheet-blue);
+  font-weight: 700;
+}
+.tab:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- camera: the one bold element ---------- */
+.camera {
+  position: relative;
+  margin: 0 calc(var(--gutter) * -1);
+  background: #000;
+  aspect-ratio: 3 / 4;
+  max-height: 62dvh;
+  width: calc(100% + var(--gutter) * 2);
+  overflow: hidden;
+}
+.camera video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.camera__guide {
+  position: absolute;
+  inset: 6% 10%;
+  pointer-events: none;
+}
+/* Corner targets echo the printed corner squares and fill in like a pencilled bubble. */
+.target {
+  position: absolute;
+  width: 15%;
+  aspect-ratio: 1;
+  border: 4px solid rgba(255, 255, 255, 0.85);
+  border-radius: 4px;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+.target::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+}
+.target--seen {
+  border-color: #3ddc76;
+  background: rgba(30, 123, 60, 0.35);
+}
+.target--seen::after {
+  border-color: #3ddc76;
+  background: #3ddc76;
+}
+.target--0 {
+  top: 0;
+  left: 0;
+}
+.target--1 {
+  top: 0;
+  right: 0;
+}
+.target--2 {
+  bottom: 0;
+  right: 0;
+}
+.target--3 {
+  bottom: 0;
+  left: 0;
+}
+.camera__status {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+.camera__flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}
+.camera__flash--on {
+  animation: flash 260ms ease-out;
+}
+@keyframes flash {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.camera__idle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  color: #fff;
+  background: var(--ink);
+}
+.camera__idle p {
+  margin: 0;
+  color: #c9d1db;
+}
+
+.capture-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+.shutter {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 5px solid var(--sheet-blue);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 5px var(--paper);
+  cursor: pointer;
+}
+.shutter:active {
+  background: var(--sheet-blue);
+}
+.shutter:disabled {
+  opacity: 0.4;
+}
+.upload-label {
+  display: flex;
+}
+.upload-label input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.upload-label .btn {
+  flex: 1;
+}
+.upload-label input:focus-visible + .btn {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---------- lists of uploads and scans ---------- */
+.section-title {
+  font-size: 19px;
+  margin: 24px 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.section-title small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--rule);
+}
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  min-height: 60px;
+}
+.row + .row {
+  border-top: 1px solid var(--rule);
+}
+.row__main {
+  min-width: 0;
+}
+.row__main strong {
+  display: block;
+}
+.row__main span {
+  display: block;
+  font-size: 14px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row__score {
+  font-weight: 700;
+  font-size: 18px;
+}
+.empty {
+  padding: 18px 14px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--desk);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progress div {
+  height: 100%;
+  background: var(--sheet-blue);
+}
+
+/* Status bubbles: filled = done, ring = needs a person, half = still reading. */
+.bubble {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  flex: none;
+}
+.bubble--confirmed {
+  color: var(--ok);
+  background: currentColor;
+}
+.bubble--needs_review {
+  color: var(--review);
+}
+.bubble--processing,
+.bubble--uploading,
+.bubble--waiting {
+  color: var(--sheet-blue);
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+.bubble--failed,
+.bubble--rejected {
+  color: var(--bad);
+  background: repeating-linear-gradient(45deg, currentColor 0 3px, transparent 3px 6px);
+}
+.bubble--discarded,
+.bubble--paused {
+  color: var(--ink-soft);
+}
+.status--confirmed {
+  color: var(--ok);
+}
+.status--needs_review {
+  color: var(--review);
+}
+.status--failed,
+.status--rejected {
+  color: var(--bad);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .camera__flash--on {
+    animation: none;
+  }
+  .target {
+    transition: none;
+  }
+}

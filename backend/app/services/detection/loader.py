@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import threading
 
 import cv2
 import numpy as np
@@ -15,6 +16,12 @@ from app.services.detection.config import DEFAULT_CONFIG, DetectionConfig
 pillow_heif.register_heif_opener()
 
 BGR = npt.NDArray[np.uint8]
+
+
+# PDFium (behind pypdfium2) is not thread-safe: two threads inside it at once can return
+# garbage pages. Every use of it in the app goes through this lock (reading runs in a
+# thread pool, and uploads count PDF pages in request threads).
+PDFIUM_LOCK = threading.Lock()
 
 
 class UnreadableImageError(ValueError):
@@ -36,19 +43,20 @@ def _downscale(img: BGR, max_long_edge: int) -> BGR:
 def _pdf_pages(data: bytes, dpi: int) -> list[BGR]:
     import pypdfium2 as pdfium
 
-    doc = pdfium.PdfDocument(data)
-    try:
-        count = len(doc)
-    finally:
-        doc.close()
-    pages = []
-    for i in range(count):
-        single = pdfium.PdfDocument(data)
+    rendered = []
+    with PDFIUM_LOCK:
+        doc = pdfium.PdfDocument(data)
         try:
-            bitmap = single[i].render(scale=dpi / 72)
-            arr = bitmap.to_numpy()
+            for i in range(len(doc)):
+                page = doc[i]
+                bitmap = page.render(scale=dpi / 72)
+                rendered.append(bitmap.to_numpy().copy())  # own the pixels before closing
+                bitmap.close()
+                page.close()
         finally:
-            single.close()
+            doc.close()
+    pages = []
+    for arr in rendered:
         if arr.ndim == 2:
             arr = cv2.cvtColor(arr, cv2.COLOR_GRAY2BGR)
         elif arr.shape[2] == 4:

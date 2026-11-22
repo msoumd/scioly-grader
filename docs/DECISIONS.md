@@ -2,6 +2,42 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-21 — Phone app and camera capture (phase 6)
+
+**Stack.**
+- Vite + React + TypeScript in `frontend/`.
+- `vite-plugin-pwa` makes it installable (Add to Home Screen opens full-screen) and caches only the app itself; API calls and photos always go to the network.
+- Plain CSS with a few design tokens: no UI kit, large tap targets, iPhone safe areas.
+- Types for every API call are generated from the backend's OpenAPI schema (`openapi-typescript`), and CI fails if they drift.
+
+**One origin.**
+- In production the backend serves the built app at `/` (`app/web.py`), with a fallback to `index.html` for app paths. That means one HTTPS certificate, no CORS, and the login cookie just works.
+- `/api/...` paths that don't exist stay JSON 404s.
+- The app's page sends a Content-Security-Policy that only allows its own origin, plus https images for signed storage links.
+- In development, Vite passes `/api` on to the backend.
+
+**Corner markers in the browser.**
+- A pure-JavaScript ArUco port (js-aruco2, vendored in `src/vendor/` because its old module format breaks modern bundlers). Its dictionaries were replaced by OpenCV's DICT_4X4_50, exported from the same library the server prints with.
+- A unit test runs it on a fake phone photo made by the backend to prove the two agree.
+- Frames are analysed about 8 times a second at 960 px on the long side. Full OpenCV.js was rejected as too big for phones.
+
+**Auto-capture rule.**
+- The picture is taken when all four corners are seen in every frame for 0.5 s, with none moving more than about 0.6% of the frame (around 6 px). The page must also cover at least 20% of the frame and be bright enough.
+- After a capture it waits until a corner leaves the view (the next sheet goes down) and at least 1 s has passed, so one sheet is never captured twice.
+- The shutter button always works.
+- The still is a full-resolution JPEG at quality 0.9: `ImageCapture.takePhoto()` where the browser has it, otherwise the full video frame.
+
+**Uploads survive Wi-Fi drops.**
+- Every photo is saved on the phone (IndexedDB) before it is sent, and removed only when the server accepts it.
+- Network trouble, timeouts, rate limits and server errors retry after 1, 2, 4 … up to 30 s, and at once when the phone comes back online.
+- A logged-out session pauses the queue until the grader logs in again.
+- Files the server refuses (wrong type, too big) stay listed with the reason until dismissed.
+- Photos are stored as raw bytes, not Blobs, because Safari refuses Blobs in IndexedDB in private windows. If the phone refuses to store anything at all, the upload still goes from memory.
+
+**Status list.** The Scan screen checks this event's scans every 2 s while the app is in view, and right after each upload.
+
+**Bug fixed: PDFs read in parallel.** PDFium, the library that renders PDF pages, is not safe to use from two threads at once. The two background readers could get garbage pages and flag them `page_not_found`. Every PDFium call now goes through one lock. The new 3-page PDF browser test found it.
+
 ## 2026-11-21 — API, login, storage and counting rules (phase 5)
 
 **Login.**

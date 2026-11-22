@@ -46,3 +46,7 @@ supabase/.temp/
 .DS_Store
 .idea/
 .vscode/
+
+# Browser-test fixtures (made by backend/scripts/e2e_assets.py)
+frontend/e2e/.assets/
+backend/data/e2e/

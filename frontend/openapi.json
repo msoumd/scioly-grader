@@ -1,0 +1,2247 @@
+{
+ "components": {
+  "schemas": {
+   "AuditOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "entity": {
+      "title": "Entity",
+      "type": "string"
+     },
+     "entity_id": {
+      "title": "Entity Id",
+      "type": "integer"
+     },
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "grader": {
+      "title": "Grader",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "new_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "New Value"
+     },
+     "old_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Value"
+     }
+    },
+    "required": [
+     "id",
+     "entity",
+     "entity_id",
+     "field",
+     "old_value",
+     "new_value",
+     "grader",
+     "created_at"
+    ],
+    "title": "AuditOut",
+    "type": "object"
+   },
+   "Body_import_event_api_events_import_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_event_api_events_import_post",
+    "type": "object"
+   },
+   "Body_import_teams_api_teams_import_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_import_teams_api_teams_import_post",
+    "type": "object"
+   },
+   "Body_upload_scan_api_scans_post": {
+    "properties": {
+     "event_code": {
+      "description": "The event the grader is scoring",
+      "title": "Event Code",
+      "type": "string"
+     },
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file",
+     "event_code"
+    ],
+    "title": "Body_upload_scan_api_scans_post",
+    "type": "object"
+   },
+   "CorrectionIn": {
+    "properties": {
+     "marks": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "items": {
+          "type": "string"
+         },
+         "type": "array"
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Letters marked per question, e.g. {\"12\": [\"B\"]}; [] = blank",
+      "title": "Marks"
+     },
+     "team_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Set or fix the team number",
+      "title": "Team Number"
+     }
+    },
+    "title": "CorrectionIn",
+    "type": "object"
+   },
+   "CountedScanIn": {
+    "properties": {
+     "scan_id": {
+      "title": "Scan Id",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "scan_id"
+    ],
+    "title": "CountedScanIn",
+    "type": "object"
+   },
+   "DuplicateOut": {
+    "properties": {
+     "scans": {
+      "items": {
+       "$ref": "#/components/schemas/ScanSummary"
+      },
+      "title": "Scans",
+      "type": "array"
+     },
+     "team_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Name"
+     },
+     "team_number": {
+      "title": "Team Number",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "team_number",
+     "team_name",
+     "scans"
+    ],
+    "title": "DuplicateOut",
+    "type": "object"
+   },
+   "EventDetailOut": {
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date"
+     },
+     "free_response_max": {
+      "title": "Free Response Max",
+      "type": "string"
+     },
+     "mcq_points_total": {
+      "title": "Mcq Points Total",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "question_count": {
+      "title": "Question Count",
+      "type": "integer"
+     },
+     "questions": {
+      "items": {
+       "$ref": "#/components/schemas/QuestionOut"
+      },
+      "title": "Questions",
+      "type": "array"
+     },
+     "scans_counted": {
+      "default": 0,
+      "title": "Scans Counted",
+      "type": "integer"
+     },
+     "scans_needing_review": {
+      "default": 0,
+      "title": "Scans Needing Review",
+      "type": "integer"
+     },
+     "sheet_version": {
+      "title": "Sheet Version",
+      "type": "integer"
+     },
+     "team_number_digits": {
+      "title": "Team Number Digits",
+      "type": "integer"
+     },
+     "total_points": {
+      "title": "Total Points",
+      "type": "string"
+     },
+     "tournament": {
+      "title": "Tournament",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "name",
+     "tournament",
+     "date",
+     "sheet_version",
+     "team_number_digits",
+     "total_points",
+     "free_response_max",
+     "mcq_points_total",
+     "question_count",
+     "questions"
+    ],
+    "title": "EventDetailOut",
+    "type": "object"
+   },
+   "EventImportOut": {
+    "properties": {
+     "action": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Action"
+     },
+     "event_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Code"
+     },
+     "report": {
+      "$ref": "#/components/schemas/ImportReportOut"
+     },
+     "saved": {
+      "title": "Saved",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "report",
+     "saved"
+    ],
+    "title": "EventImportOut",
+    "type": "object"
+   },
+   "EventOut": {
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "date": {
+      "anyOf": [
+       {
+        "format": "date",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date"
+     },
+     "free_response_max": {
+      "title": "Free Response Max",
+      "type": "string"
+     },
+     "mcq_points_total": {
+      "title": "Mcq Points Total",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "question_count": {
+      "title": "Question Count",
+      "type": "integer"
+     },
+     "scans_counted": {
+      "default": 0,
+      "title": "Scans Counted",
+      "type": "integer"
+     },
+     "scans_needing_review": {
+      "default": 0,
+      "title": "Scans Needing Review",
+      "type": "integer"
+     },
+     "sheet_version": {
+      "title": "Sheet Version",
+      "type": "integer"
+     },
+     "team_number_digits": {
+      "title": "Team Number Digits",
+      "type": "integer"
+     },
+     "total_points": {
+      "title": "Total Points",
+      "type": "string"
+     },
+     "tournament": {
+      "title": "Tournament",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "name",
+     "tournament",
+     "date",
+     "sheet_version",
+     "team_number_digits",
+     "total_points",
+     "free_response_max",
+     "mcq_points_total",
+     "question_count"
+    ],
+    "title": "EventOut",
+    "type": "object"
+   },
+   "FreeResponseIn": {
+    "properties": {
+     "value": {
+      "anyOf": [
+       {
+        "minimum": 0.0,
+        "type": "number"
+       },
+       {
+        "type": "string"
+       }
+      ],
+      "description": "Total free-response points, in 0.5 steps",
+      "title": "Value"
+     }
+    },
+    "required": [
+     "value"
+    ],
+    "title": "FreeResponseIn",
+    "type": "object"
+   },
+   "FreeResponseOut": {
+    "properties": {
+     "grader": {
+      "title": "Grader",
+      "type": "string"
+     },
+     "team_number": {
+      "title": "Team Number",
+      "type": "integer"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "team_number",
+     "value",
+     "grader",
+     "updated_at"
+    ],
+    "title": "FreeResponseOut",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "ImportReportOut": {
+    "properties": {
+     "errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "mcq_points_total": {
+      "title": "Mcq Points Total",
+      "type": "string"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "ok": {
+      "title": "Ok",
+      "type": "boolean"
+     },
+     "question_count": {
+      "title": "Question Count",
+      "type": "integer"
+     },
+     "sheet_note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sheet Note"
+     },
+     "source": {
+      "title": "Source",
+      "type": "string"
+     },
+     "tabs_ignored": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Tabs Ignored",
+      "type": "array"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "ok",
+     "source",
+     "errors",
+     "warnings",
+     "notes",
+     "tabs_ignored",
+     "question_count",
+     "mcq_points_total",
+     "sheet_note",
+     "text"
+    ],
+    "title": "ImportReportOut",
+    "type": "object"
+   },
+   "LoginRequest": {
+    "properties": {
+     "grader_name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Grader Name",
+      "type": "string"
+     },
+     "pin": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Pin",
+      "type": "string"
+     }
+    },
+    "required": [
+     "pin",
+     "grader_name"
+    ],
+    "title": "LoginRequest",
+    "type": "object"
+   },
+   "Me": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "role": {
+      "enum": [
+       "grader",
+       "admin"
+      ],
+      "title": "Role",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "role"
+    ],
+    "title": "Me",
+    "type": "object"
+   },
+   "QuestionOut": {
+    "properties": {
+     "correct": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Correct",
+      "type": "array"
+     },
+     "options": {
+      "title": "Options",
+      "type": "integer"
+     },
+     "penalty_per_wrong": {
+      "title": "Penalty Per Wrong",
+      "type": "string"
+     },
+     "points": {
+      "title": "Points",
+      "type": "string"
+     },
+     "q": {
+      "title": "Q",
+      "type": "integer"
+     },
+     "scoring": {
+      "title": "Scoring",
+      "type": "string"
+     }
+    },
+    "required": [
+     "q",
+     "points",
+     "options",
+     "correct",
+     "scoring",
+     "penalty_per_wrong"
+    ],
+    "title": "QuestionOut",
+    "type": "object"
+   },
+   "QuestionReadOut": {
+    "properties": {
+     "confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence"
+     },
+     "corrected": {
+      "title": "Corrected",
+      "type": "boolean"
+     },
+     "crop_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Url"
+     },
+     "detected": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Detected",
+      "type": "array"
+     },
+     "fills": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "title": "Fills",
+      "type": "object"
+     },
+     "flags": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+     },
+     "marked": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Marked",
+      "type": "array"
+     },
+     "q": {
+      "title": "Q",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "q",
+     "marked",
+     "detected",
+     "corrected",
+     "fills",
+     "confidence",
+     "flags",
+     "crop_url"
+    ],
+    "title": "QuestionReadOut",
+    "type": "object"
+   },
+   "RescoreOut": {
+    "properties": {
+     "changed": {
+      "title": "Changed",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "changed"
+    ],
+    "title": "RescoreOut",
+    "type": "object"
+   },
+   "ResultRow": {
+    "properties": {
+     "free_response": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Free Response"
+     },
+     "free_response_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Free Response At"
+     },
+     "free_response_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Free Response By"
+     },
+     "mcq": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mcq"
+     },
+     "mcq_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mcq At"
+     },
+     "mcq_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mcq By"
+     },
+     "missing": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Missing",
+      "type": "array"
+     },
+     "rank": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rank"
+     },
+     "team_name": {
+      "title": "Team Name",
+      "type": "string"
+     },
+     "team_number": {
+      "title": "Team Number",
+      "type": "integer"
+     },
+     "total": {
+      "title": "Total",
+      "type": "string"
+     }
+    },
+    "required": [
+     "rank",
+     "team_number",
+     "team_name",
+     "mcq",
+     "free_response",
+     "total",
+     "missing",
+     "mcq_by",
+     "mcq_at",
+     "free_response_by",
+     "free_response_at"
+    ],
+    "title": "ResultRow",
+    "type": "object"
+   },
+   "ResultsOut": {
+    "properties": {
+     "event_code": {
+      "title": "Event Code",
+      "type": "string"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/ResultRow"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "scans_needing_review": {
+      "title": "Scans Needing Review",
+      "type": "integer"
+     },
+     "teams_complete": {
+      "title": "Teams Complete",
+      "type": "integer"
+     },
+     "teams_missing_something": {
+      "title": "Teams Missing Something",
+      "type": "integer"
+     },
+     "total_points": {
+      "title": "Total Points",
+      "type": "string"
+     }
+    },
+    "required": [
+     "event_code",
+     "total_points",
+     "rows",
+     "teams_complete",
+     "teams_missing_something",
+     "scans_needing_review"
+    ],
+    "title": "ResultsOut",
+    "type": "object"
+   },
+   "ScanCreated": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "page": {
+      "title": "Page",
+      "type": "integer"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ScanStatus"
+     }
+    },
+    "required": [
+     "id",
+     "page",
+     "status"
+    ],
+    "title": "ScanCreated",
+    "type": "object"
+   },
+   "ScanOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "event_code": {
+      "title": "Event Code",
+      "type": "string"
+     },
+     "flags": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+     },
+     "grader": {
+      "title": "Grader",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_counted": {
+      "title": "Is Counted",
+      "type": "boolean"
+     },
+     "mcq_score": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mcq Score"
+     },
+     "original_url": {
+      "title": "Original Url",
+      "type": "string"
+     },
+     "page": {
+      "title": "Page",
+      "type": "integer"
+     },
+     "page_flags": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Page Flags",
+      "type": "array"
+     },
+     "questions": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/QuestionReadOut"
+      },
+      "title": "Questions",
+      "type": "array"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ScanStatus"
+     },
+     "team": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Team",
+      "type": "object"
+     },
+     "team_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Number"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     },
+     "warped_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warped Url"
+     }
+    },
+    "required": [
+     "id",
+     "event_code",
+     "status",
+     "is_counted",
+     "team_number",
+     "mcq_score",
+     "flags",
+     "page",
+     "error",
+     "grader",
+     "created_at",
+     "updated_at",
+     "original_url",
+     "warped_url"
+    ],
+    "title": "ScanOut",
+    "type": "object"
+   },
+   "ScanStatus": {
+    "enum": [
+     "processing",
+     "failed",
+     "needs_review",
+     "confirmed",
+     "discarded"
+    ],
+    "title": "ScanStatus",
+    "type": "string"
+   },
+   "ScanSummary": {
+    "properties": {
+     "flags": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Flags",
+      "type": "array"
+     },
+     "grader": {
+      "title": "Grader",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "is_counted": {
+      "title": "Is Counted",
+      "type": "boolean"
+     },
+     "mcq_score": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mcq Score"
+     },
+     "status": {
+      "$ref": "#/components/schemas/ScanStatus"
+     },
+     "team_number": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Team Number"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "status",
+     "is_counted",
+     "team_number",
+     "mcq_score",
+     "flags",
+     "grader",
+     "updated_at"
+    ],
+    "title": "ScanSummary",
+    "type": "object"
+   },
+   "TeamOut": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "team_number": {
+      "title": "Team Number",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "team_number",
+     "name"
+    ],
+    "title": "TeamOut",
+    "type": "object"
+   },
+   "TeamsImportOut": {
+    "properties": {
+     "errors": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+     },
+     "inserted": {
+      "default": 0,
+      "title": "Inserted",
+      "type": "integer"
+     },
+     "ok": {
+      "title": "Ok",
+      "type": "boolean"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     },
+     "updated": {
+      "default": 0,
+      "title": "Updated",
+      "type": "integer"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "ok",
+     "errors",
+     "warnings",
+     "text"
+    ],
+    "title": "TeamsImportOut",
+    "type": "object"
+   },
+   "UploadOut": {
+    "properties": {
+     "scans": {
+      "items": {
+       "$ref": "#/components/schemas/ScanCreated"
+      },
+      "title": "Scans",
+      "type": "array"
+     }
+    },
+    "required": [
+     "scans"
+    ],
+    "title": "UploadOut",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "description": "Science Olympiad bubble-sheet grader. Log in with `POST /api/login` first; the session cookie is then sent automatically from this page.",
+  "title": "scioly-grader",
+  "version": "0.6.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/audit": {
+   "get": {
+    "description": "Every edit to an existing score: who, when, old and new value (newest first).",
+    "operationId": "get_audit_api_audit_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "entity",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Entity"
+      }
+     },
+     {
+      "in": "query",
+      "name": "entity_id",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Entity Id"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 200,
+       "maximum": 1000,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AuditOut"
+         },
+         "title": "Response Get Audit Api Audit Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Audit",
+    "tags": [
+     "results"
+    ]
+   }
+  },
+  "/api/events": {
+   "get": {
+    "operationId": "list_events_api_events_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/EventOut"
+         },
+         "title": "Response List Events Api Events Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Events",
+    "tags": [
+     "events"
+    ]
+   }
+  },
+  "/api/events/import": {
+   "post": {
+    "description": "Upload a supervisor's event-setup .xlsx. Returns the import report; saves unless\n``dry_run`` or the report has problems.",
+    "operationId": "import_event_api_events_import_post",
+    "parameters": [
+     {
+      "description": "Check the file without saving",
+      "in": "query",
+      "name": "dry_run",
+      "required": false,
+      "schema": {
+       "default": false,
+       "description": "Check the file without saving",
+       "title": "Dry Run",
+       "type": "boolean"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_event_api_events_import_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EventImportOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Import Event",
+    "tags": [
+     "events"
+    ]
+   }
+  },
+  "/api/events/{code}": {
+   "get": {
+    "operationId": "event_detail_api_events__code__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EventDetailOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Event Detail",
+    "tags": [
+     "events"
+    ]
+   }
+  },
+  "/api/events/{code}/duplicates": {
+   "get": {
+    "description": "Teams with more than one scan that is not discarded.",
+    "operationId": "duplicates_api_events__code__duplicates_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/DuplicateOut"
+         },
+         "title": "Response Duplicates Api Events  Code  Duplicates Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Duplicates",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/events/{code}/rescore": {
+   "post": {
+    "description": "Recompute every scan's score after the answer key changed (audited).",
+    "operationId": "rescore_api_events__code__rescore_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RescoreOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Rescore",
+    "tags": [
+     "events"
+    ]
+   }
+  },
+  "/api/events/{code}/results": {
+   "get": {
+    "description": "Every team: multiple choice, free response, total and rank (ties share a rank).",
+    "operationId": "get_results_api_events__code__results_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ResultsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Results",
+    "tags": [
+     "results"
+    ]
+   }
+  },
+  "/api/events/{code}/results.csv": {
+   "get": {
+    "operationId": "get_results_csv_api_events__code__results_csv_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Results Csv",
+    "tags": [
+     "results"
+    ]
+   }
+  },
+  "/api/events/{code}/scans": {
+   "get": {
+    "operationId": "event_scans_api_events__code__scans_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/ScanStatus"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ScanSummary"
+         },
+         "title": "Response Event Scans Api Events  Code  Scans Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Event Scans",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/events/{code}/sheet.pdf": {
+   "get": {
+    "description": "The printable bubble sheet. Print at 100% / actual size.",
+    "operationId": "sheet_pdf_api_events__code__sheet_pdf_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Sheet Pdf",
+    "tags": [
+     "events"
+    ]
+   }
+  },
+  "/api/events/{code}/teams/{team_number}/counted-scan": {
+   "post": {
+    "description": "Supervisor picks which scan counts for a team; the team's other scans are discarded.",
+    "operationId": "choose_counted_scan_api_events__code__teams__team_number__counted_scan_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "team_number",
+      "required": true,
+      "schema": {
+       "title": "Team Number",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CountedScanIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Choose Counted Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/events/{code}/teams/{team_number}/free-response": {
+   "put": {
+    "description": "Enter or change a team's free-response total (0 to the event's maximum, 0.5 steps).\nChanging an existing value is recorded in the audit log.",
+    "operationId": "set_free_response_api_events__code__teams__team_number__free_response_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "code",
+      "required": true,
+      "schema": {
+       "title": "Code",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "team_number",
+      "required": true,
+      "schema": {
+       "title": "Team Number",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FreeResponseIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FreeResponseOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Set Free Response",
+    "tags": [
+     "results"
+    ]
+   }
+  },
+  "/api/files/{key}": {
+   "get": {
+    "operationId": "get_file_api_files__key__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "key",
+      "required": true,
+      "schema": {
+       "title": "Key",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get File",
+    "tags": [
+     "files"
+    ]
+   }
+  },
+  "/api/login": {
+   "post": {
+    "operationId": "login_api_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Me"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Login",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/logout": {
+   "post": {
+    "operationId": "logout_api_logout_post",
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Logout",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/me": {
+   "get": {
+    "operationId": "me_api_me_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Me"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Me",
+    "tags": [
+     "auth"
+    ]
+   }
+  },
+  "/api/scans": {
+   "post": {
+    "description": "Upload a photo, scan or multi-page PDF. Returns at once with one scan per page\n(status ``processing``); poll ``GET /api/scans/{id}`` for the result.",
+    "operationId": "upload_scan_api_scans_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_scan_api_scans_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UploadOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Upload Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/scans/{scan_id}": {
+   "get": {
+    "description": "The read result: marks per question (after corrections), flags, crop images, score.",
+    "operationId": "read_scan_api_scans__scan_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Read Scan",
+    "tags": [
+     "scans"
+    ]
+   },
+   "patch": {
+    "description": "Fix marks and/or the team number from the review screen; the score is recomputed\nand every change is recorded in the audit log.",
+    "operationId": "correct_scan_api_scans__scan_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CorrectionIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Correct Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/scans/{scan_id}/confirm": {
+   "post": {
+    "description": "A grader has checked this scan: it now counts for its team.",
+    "operationId": "confirm_scan_api_scans__scan_id__confirm_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Confirm Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/scans/{scan_id}/discard": {
+   "post": {
+    "description": "Bad photo or unwanted duplicate: keep the image but never count it.",
+    "operationId": "discard_scan_api_scans__scan_id__discard_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "scan_id",
+      "required": true,
+      "schema": {
+       "title": "Scan Id",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScanOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Discard Scan",
+    "tags": [
+     "scans"
+    ]
+   }
+  },
+  "/api/teams": {
+   "get": {
+    "operationId": "list_teams_api_teams_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TeamOut"
+         },
+         "title": "Response List Teams Api Teams Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Teams",
+    "tags": [
+     "teams"
+    ]
+   }
+  },
+  "/api/teams/import": {
+   "post": {
+    "description": "Upload ``team_number,team_name`` CSV. Saved only if every line is valid.",
+    "operationId": "import_teams_api_teams_import_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_import_teams_api_teams_import_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TeamsImportOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Import Teams",
+    "tags": [
+     "teams"
+    ]
+   }
+  },
+  "/health": {
+   "get": {
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "title": "Response Health Health Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health"
+   }
+  }
+ }
+}

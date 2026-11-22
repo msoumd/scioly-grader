@@ -321,3 +321,21 @@ def test_multipage_pdf_reads_every_page() -> None:
 def test_unreadable_files(data: bytes) -> None:
     with pytest.raises(UnreadableImageError):
         load_images(data)
+
+
+def test_pdf_pages_are_identical_when_read_from_many_threads() -> None:
+    """PDFium is not thread-safe; the loader serialises it so parallel readers agree."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from app.services.detection.loader import PDFIUM_LOCK
+
+    teams = [[[0], [1]], [[0], [2]], [[0], [3]]]
+    pages = [Image.fromarray(_painted(_truth(MARKS, t))).convert("RGB") for t in teams]
+    buf = io.BytesIO()
+    pages[0].save(buf, "PDF", resolution=DPI, save_all=True, append_images=pages[1:])
+    data = buf.getvalue()
+    ref = load_images(data, "scans.pdf")
+    with ThreadPoolExecutor(4) as pool:
+        for got in pool.map(lambda _: load_images(data, "scans.pdf"), range(12)):
+            assert all(np.array_equal(a, b) for a, b in zip(ref, got, strict=True))
+    assert not PDFIUM_LOCK.locked()
