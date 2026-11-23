@@ -13,3 +13,7 @@ To start a new event, copy either file, then fill in the `Event` tab and one row
 cd backend
 uv run python -m app.cli import-event ../event_setups/your_event.xlsx
 ```
+
+## Teams list
+
+`EXAMPLE_teams.csv` is a made-up list of 12 teams for trying the app. For a real tournament, make your own with the same two columns: `team_number,team_name`, one team per line (in Excel or Numbers: Save As → CSV). One list covers every event. Importing again updates names and adds new teams.
