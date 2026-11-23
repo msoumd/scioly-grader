@@ -2,6 +2,12 @@
 
 Short record of choices made while building. Newest first.
 
+## 2026-11-23 — Railway instead of Render
+
+Railway's Hobby plan ($5/month including $5 of usage) bills by what the app actually uses: about 0.2–0.3 GB of memory and almost no CPU when idle, so roughly $5/month in total. It also gives more CPU automatically during a tournament-day burst, so there's no plan switch for tournament week. Render's cheapest suitable setup was $7/month, plus Standard for the week.
+
+`railway.json` builds the same Dockerfile and checks `/health`. Railway deploys `main` itself once CI passes ("Wait for CI"); the Deploy check workflow then waits for that commit on `/health` (`RAILWAY_GIT_COMMIT_SHA`) and smoke-tests the live site. `render.yaml` and the deploy-hook path remain as an alternative.
+
 ## 2026-11-22 — Budget hosting: photos deleted once a sheet is done
 
 Budget is $35/month, so Supabase stays on the **free** plan and Render runs **Starter** ($7) except in tournament week (**Standard**, $25, billed by the second). Load numbers for both are in [`DEPLOY.md`](DEPLOY.md).

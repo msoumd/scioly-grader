@@ -121,7 +121,7 @@ The **Scores** tab is where graders type each team's free-response total. The **
 
 ## Put it online
 
-See [`docs/DEPLOY.md`](docs/DEPLOY.md): Supabase for data and photos, Render for the app, GitHub for automatic deploys and nightly backups, with costs. To try the production container locally:
+See [`docs/DEPLOY.md`](docs/DEPLOY.md): Supabase (free) for data, Railway (about $5/month) for the app, GitHub for automatic deploys and nightly backups, with costs. To try the production container locally:
 
 ```bash
 docker build -t scioly-grader .

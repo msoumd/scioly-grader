@@ -83,6 +83,8 @@ def test_health_reports_deployed_commit(
     app = create_app(settings_for(tmp_path), migrated_engine, LocalStorage(tmp_path))
     with TestClient(app) as c:
         assert c.get("/health").json() == {"status": "ok", "commit": "0123456789ab"}
+        monkeypatch.setenv("RAILWAY_GIT_COMMIT_SHA", "fedcba9876543210")
+        assert c.get("/health").json()["commit"] == "fedcba987654"
 
 
 def test_client_ip_trusts_only_the_proxies_hops() -> None:
