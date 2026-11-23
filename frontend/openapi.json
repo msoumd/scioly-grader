@@ -2543,7 +2543,7 @@
   },
   "/health": {
    "get": {
-    "description": "Liveness check for the host and uptime monitors. ``commit`` is the deployed git\ncommit (set by Render) so the deploy workflow can tell when a new version is live.",
+    "description": "Liveness check for the host and uptime monitors. ``commit`` is the deployed git\ncommit (set by Railway or Render) so the deploy workflow can tell when a new version is live.",
     "operationId": "health_health_get",
     "responses": {
      "200": {
